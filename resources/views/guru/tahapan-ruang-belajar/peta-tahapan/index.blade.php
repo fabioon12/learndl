@@ -145,9 +145,13 @@
                         </a>
 
                         <!-- 3. Tambah Sub-Isi / Aktivitas Materi -->
-                        <a href="{{ route('guru.ruang-belajar.tahapan.konten.edit', [$ruangBelajar->id, $tahapan->id]) }}" 
-                        class="p-2 bg-gray-50 dark:bg-cyberdark-900 hover:bg-purple-50 dark:hover:bg-purple-950/50 text-gray-500 hover:text-purple-600 rounded-xl text-center text-xs transition cursor-pointer" 
+                        <a href="{{ route('guru.ruang-belajar.tahapan.konten.edit', [
+                            'ruang_belajar' => $ruangBelajar->id,
+                            'tahapan' => $tahapan->id
+                        ]) }}"
+                        class="p-2 bg-gray-50 dark:bg-cyberdark-900 hover:bg-purple-50 dark:hover:bg-purple-950/50 text-gray-500 hover:text-purple-600 rounded-xl text-center text-xs transition cursor-pointer"
                         title="Tambah / Atur Isi Aktivitas">
+
                             <i class="fa-solid fa-plus-circle"></i>
                         </a>
 

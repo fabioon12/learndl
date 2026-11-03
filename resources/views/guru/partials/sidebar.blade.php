@@ -89,14 +89,15 @@
             </a>
 
             <!-- Item 4: Bank Soal & Kuis -->
-            <a href="#" 
-               class="flex items-center space-x-3 px-3 sm:px-3.5 py-2 sm:py-2.5 rounded-2xl transition-all duration-200 group {{ request()->is('guru/ujian*') ? 'bg-gradient-to-r from-indigo-500/10 to-purple-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 font-bold shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100/80 dark:hover:bg-cyberdark-800/80 hover:text-gray-900 dark:hover:text-pink-300 font-semibold' }}">
-                <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center transition-colors shrink-0 {{ request()->is('guru/ujian*') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/30' : 'bg-gray-100 dark:bg-cyberdark-800 group-hover:bg-indigo-500/10 group-hover:text-indigo-500' }}">
+            <a href="{{ route('guru.ruang-ujian.index') }}"
+            class="flex items-center space-x-3 px-3 sm:px-3.5 py-2 sm:py-2.5 rounded-2xl transition-all duration-200 group {{ request()->is('guru/ruang-ujian*') ? 'bg-gradient-to-r from-indigo-500/10 to-purple-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 font-bold shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100/80 dark:hover:bg-cyberdark-800/80 hover:text-gray-900 dark:hover:text-pink-300 font-semibold' }}">
+
+                <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center transition-colors shrink-0 {{ request()->is('guru/ruang-ujian*') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/30' : 'bg-gray-100 dark:bg-cyberdark-800 group-hover:bg-indigo-500/10 group-hover:text-indigo-500' }}">
                     <i class="fa-solid fa-file-signature text-xs sm:text-sm"></i>
                 </div>
-                <span class="sidebar-text text-xs tracking-wide truncate">Ujian & Kuis</span>
-            </a>
 
+                <span class="sidebar-text text-xs tracking-wide truncate">Ruang Ujian</span>
+            </a>
             <!-- Item 5: Penilaian & Tugas -->
             <a href="#" 
                class="flex items-center space-x-3 px-3 sm:px-3.5 py-2 sm:py-2.5 rounded-2xl transition-all duration-200 group {{ request()->is('guru/penilaian*') ? 'bg-gradient-to-r from-indigo-500/10 to-purple-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 font-bold shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100/80 dark:hover:bg-cyberdark-800/80 hover:text-gray-900 dark:hover:text-pink-300 font-semibold' }}">

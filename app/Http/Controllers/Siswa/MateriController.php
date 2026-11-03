@@ -61,11 +61,20 @@ class MateriController extends Controller
     public function ambilMateri(Request $request, $id)
     {
         $siswa = Auth::user();
-        $materi = Materi::findOrFail($id);
 
-        $siswa->enrolledMateris()->syncWithoutDetaching([$id]);
+        // Pastikan materi berasal dari guru di sekolah yang sama.
+        $materi = Materi::whereHas('guru', function ($query) use ($siswa) {
+                $query->where('school_name', $siswa->school_name);
+            })
+            ->findOrFail($id);
 
-        return redirect()->route('siswa.ruang-materi.index')
-                        ->with('success', 'Berhasil mengambil materi! Silakan mulai belajar.');
+        // Daftarkan siswa tanpa membuat data pendaftaran ganda.
+        $siswa->enrolledMateris()->syncWithoutDetaching([
+            $materi->id
+        ]);
+
+        return redirect()
+            ->route('siswa.ruang-materi.index')
+            ->with('success', 'Berhasil mengambil materi! Silakan mulai belajar.');
     }
 }

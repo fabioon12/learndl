@@ -15,6 +15,7 @@ class Tahapan extends Model
     protected $fillable = [
         'ruang_belajar_id',
         'ruang_materi_id',
+        'ruang_ujian_id',
         'judul_tahapan',
         'urutan',
         'status',
@@ -22,6 +23,10 @@ class Tahapan extends Model
         'tipe',
         'xp_reward',
         'konten',
+    ];
+
+    protected $casts = [
+        'konten' => 'array',
     ];
 
     /**
@@ -34,5 +39,18 @@ class Tahapan extends Model
     public function userProgress()
     {
         return $this->hasMany(TahapanUser::class, 'tahapan_id');
+    }
+    public function ruangUjian()
+    {
+        return $this->belongsTo(RuangUjian::class, 'ruang_ujian_id');
+    }
+
+    public function hasilUjian()
+    {
+        return $this->hasMany(HasilUjian::class, 'tahapan_id');
+    }
+    public function ruangMateri()
+    {
+        return $this->belongsTo(Materi::class, 'ruang_materi_id');
     }
 }

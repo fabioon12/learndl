@@ -81,18 +81,70 @@ class User extends Authenticatable
         return $this->belongsToMany(Materi::class, 'materi_users', 'user_id', 'materi_id')
                     ->withTimestamps();
     }
-    public function materis()
-    {
-        return $this->belongsToMany(
-            Materi::class,
-            'materi_users',
-            'user_id',
-            'materi_id'
-        )->withTimestamps();
-    }
-
     public function submateriProgress()
     {
         return $this->hasMany(SubmateriProgress::class);
     }
+    public function tahapanProgress()
+    {
+        return $this->hasMany(TahapanUser::class, 'user_id');
+    }
+    public function ruangUjianDibuat()
+    {
+        return $this->hasMany(RuangUjian::class, 'guru_id');
+    }
+
+    // Riwayat pengerjaan ujian siswa
+    public function hasilUjian()
+    {
+        return $this->hasMany(HasilUjian::class, 'user_id');
+    }
+
+    // Jawaban ujian siswa
+    public function jawabanUjian()
+    {
+        return $this->hasManyThrough(
+            JawabanUjian::class,
+            HasilUjian::class,
+            'user_id',
+            'hasil_ujian_id',
+            'id',
+            'id'
+        );
+    }
+
+/**
+ * Menghitung total EXP global siswa.
+ */
+public function totalXp(): int
+{
+    // 1. EXP Ruang Materi
+    $xpMateri = $this->submateriProgress()
+        ->whereNotNull('completed_at')
+        ->sum('xp_earned');
+
+    // 2. EXP Ruang Belajar biasa
+    // Pre-Test dan Post-Test tidak ikut dijumlahkan.
+    $xpRuangBelajar = $this->tahapanProgress()
+        ->where('status', 'selesai')
+        ->whereHas('tahapan', function ($query) {
+            $query->whereNotIn('tipe', [
+                'pre_test',
+                'post_test',
+            ]);
+        })
+        ->sum('exp_didapat');
+
+    // 3. EXP seluruh ujian yang sudah selesai
+    $xpUjian = $this->hasilUjian()
+        ->where('status', 'selesai')
+        ->sum('exp_diperoleh');
+
+    return (int) (
+        $xpMateri +
+        $xpRuangBelajar +
+        $xpUjian
+    );
+}
+
 }

@@ -8,6 +8,7 @@ use App\Models\Materi;
 use App\Models\Submateri;
 use App\Models\SubmateriProgress;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class DashboardBelajarController extends Controller
 {
@@ -32,10 +33,15 @@ class DashboardBelajarController extends Controller
             ->pluck('submateri_id')
             ->toArray();
 
-        // Total XP
-        $totalXp = SubmateriProgress::where('user_id', $user->id)
-            ->whereNotNull('completed_at')
-            ->sum('xp_earned');
+        $totalXp = $user->totalXp();
+
+        // Level: setiap 100 EXP naik satu level
+        $level = (int) floor($totalXp / 100) + 1;
+
+        // EXP untuk level selanjutnya
+        $xpInLevel = $totalXp % 100;
+        $xpNeeded = 100;
+        $xpPercentage = ($xpInLevel / $xpNeeded) * 100;
 
         // Level: setiap 100 XP naik satu level
         $level = (int) floor($totalXp / 100) + 1;
@@ -119,46 +125,47 @@ class DashboardBelajarController extends Controller
         ));
     }
     
+
     public function completeSubmateri($materiId, $submateriId)
     {
         $user = Auth::user();
 
         // 1. Pastikan materi sudah diambil siswa
-        $materi = Materi::whereHas('users', function ($query) use ($user) {
+        $materi = Materi::whereHas('siswa', function ($query) use ($user) {
             $query->where('users.id', $user->id);
         })->findOrFail($materiId);
 
-        // 2. Cari submateri yang akan diselesaikan
+        // 2. Pastikan submateri termasuk dalam materi dan sudah terbit
         $submateri = Submateri::where('materi_id', $materi->id)
             ->where('status', 'terbit')
             ->findOrFail($submateriId);
 
         try {
-
             DB::transaction(function () use ($user, $materi, $submateri) {
 
-                // 3. Cek apakah submateri sudah pernah diselesaikan
+                // 3. Cek apakah sudah pernah diselesaikan
                 $progress = SubmateriProgress::where('user_id', $user->id)
                     ->where('submateri_id', $submateri->id)
                     ->lockForUpdate()
                     ->first();
 
-                // Jika sudah selesai, jangan berikan XP lagi
+                // Jangan berikan EXP dua kali
                 if ($progress && $progress->completed_at !== null) {
                     return;
                 }
 
-                // 4. Pastikan submateri sebelumnya sudah selesai
+                // 4. Cari submateri sebelumnya yang berstatus terbit
                 $previousSubmateri = Submateri::where('materi_id', $materi->id)
                     ->where('status', 'terbit')
                     ->where('urutan', '<', $submateri->urutan)
                     ->orderByDesc('urutan')
                     ->first();
 
+                // 5. Pastikan submateri sebelumnya sudah selesai
                 if ($previousSubmateri) {
-
                     $previousCompleted = SubmateriProgress::where(
-                        'user_id', $user->id
+                        'user_id',
+                        $user->id
                     )
                         ->where('submateri_id', $previousSubmateri->id)
                         ->whereNotNull('completed_at')
@@ -169,10 +176,10 @@ class DashboardBelajarController extends Controller
                     }
                 }
 
-                // 5. Ambil XP dari submateri
+                // 6. Tentukan EXP
                 $xp = $submateri->xp_reward ?? 25;
 
-                // 6. Simpan progres penyelesaian
+                // 7. Simpan progres
                 if (!$progress) {
                     $progress = new SubmateriProgress();
 
@@ -183,19 +190,16 @@ class DashboardBelajarController extends Controller
                 $progress->xp_earned = $xp;
                 $progress->completed_at = now();
                 $progress->save();
-
             });
 
             return redirect()
                 ->route('dashboard-belajar')
                 ->with('success', 'Selamat! Submateri berhasil diselesaikan.');
 
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
+            throw $e;
+
         } catch (\Throwable $e) {
-
-            if ($e instanceof \Symfony\Component\HttpKernel\Exception\HttpException) {
-                throw $e;
-            }
-
             report($e);
 
             return back()->with(
@@ -204,5 +208,6 @@ class DashboardBelajarController extends Controller
             );
         }
     }
+
 
 }

@@ -31,11 +31,8 @@ class Submateri extends Model
     {
         return $this->belongsTo(Materi::class, 'materi_id');
     }
-    public function progresses()
+    public function progress()
     {
-        return $this->hasMany(
-            SubmateriProgress::class,
-            'submateri_id'
-        );
+        return $this->hasMany(SubmateriProgress::class, 'submateri_id');
     }
 }

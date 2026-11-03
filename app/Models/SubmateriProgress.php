@@ -17,6 +17,7 @@ class SubmateriProgress extends Model
     ];
 
     protected $casts = [
+        'xp_earned' => 'integer',
         'completed_at' => 'datetime',
     ];
 

@@ -198,7 +198,7 @@
             });
         </script>
     @endif
-    
+    @stack('scripts')
     <!-- script sidebar -->
     @include('siswa.partials.script-sidebar')
 </body>

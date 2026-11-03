@@ -1,206 +1,598 @@
+
 @extends('siswa.layouts.app')
 
-@section('title', 'Ruang Ujian Utama: Evaluasi Essay Deep Learning CNN')
+@section('title', 'Kerjakan Ujian - ' . $ruangUjian->judul)
 
 @section('content')
-<div class="sticky top-0 z-40 bg-white dark:bg-cyberdark-900 border-b border-gray-200 dark:border-pink-950/30 shadow-md -mx-4 px-4 py-3 mb-6 flex flex-col sm:flex-row items-center justify-between gap-3">
-    <div class="flex items-center space-x-3">
-        <div class="w-8 h-8 rounded-lg bg-pink-500 text-white flex items-center justify-center text-xs font-mono font-black animate-pulse">
-            <i class="fa-solid fa-graduation-cap"></i>
-        </div>
-        <div>
-            <h2 class="text-xs font-black text-gray-800 dark:text-white leading-tight uppercase tracking-wider">Ujian Evaluasi Essay Modul 02</h2>
-            <p class="text-[10px] text-gray-400 font-mono">Materi: Analisis Dampak Hyperparameter & Desain Lapangan Konvolusi</p>
+
+@php
+    $totalSoal = $soalUjians->count();
+
+    $sisaDetik = max(
+        0,
+        now()->diffInSeconds($batasWaktu, false)
+    );
+
+    $jawabanTersimpan = $jawabanSaya ?? collect();
+@endphp
+
+<div
+    x-data="ujianApp({
+        totalSoal: {{ $totalSoal }},
+        sisaDetik: {{ $sisaDetik }}
+    })"
+    x-init="init()"
+    class="min-h-screen pb-10 text-gray-800 dark:text-gray-100"
+>
+    {{-- HEADER UJIAN --}}
+    <div class="mb-6">
+        <a href="{{ route('siswa.ujian.index') }}"
+           class="inline-flex items-center gap-2 mb-4 text-sm font-medium text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition">
+            <i class="fa-solid fa-arrow-left"></i>
+            Kembali ke Daftar Ujian
+        </a>
+
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
+            <div>
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400">
+                        <i class="fa-solid fa-clipboard-check mr-1"></i>
+                        Ujian Berlangsung
+                    </span>
+                </div>
+
+                <h1 class="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
+                    {{ $ruangUjian->judul }}
+                </h1>
+
+                <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                    {{ $ruangUjian->deskripsi ?? 'Kerjakan seluruh soal dengan teliti dan perhatikan waktu ujian.' }}
+                </p>
+            </div>
+
+            {{-- TIMER --}}
+            <div
+                class="flex items-center gap-4 p-4 rounded-2xl border shadow-sm transition"
+                :class="sisaDetik <= 300
+                    ? 'bg-red-50 border-red-200 dark:bg-red-500/10 dark:border-red-500/30'
+                    : 'bg-white border-gray-200 dark:bg-cyberdark-800 dark:border-cyberdark-700'"
+            >
+                <div
+                    class="w-12 h-12 rounded-xl flex items-center justify-center"
+                    :class="sisaDetik <= 300
+                        ? 'bg-red-100 text-red-600 dark:bg-red-500/20 dark:text-red-400'
+                        : 'bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400'"
+                >
+                    <i class="fa-solid fa-clock text-xl"></i>
+                </div>
+
+                <div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 font-medium">
+                        Sisa Waktu
+                    </p>
+
+                    <p class="text-2xl font-black tabular-nums"
+                       :class="sisaDetik <= 300 ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-white'"
+                       x-text="formatWaktu()">
+                    </p>
+                </div>
+            </div>
         </div>
     </div>
-    
-    <div class="flex items-center space-x-2 bg-gray-50 dark:bg-gray-950 px-4 py-1.5 rounded-xl border border-gray-200 dark:border-pink-950/20 font-mono">
-        <span class="text-[10px] uppercase font-bold text-gray-400">Sisa Waktu:</span>
-        <div id="countdown-timer" class="text-sm font-black text-purple-600 dark:text-purple-400 tracking-widest">
-            01:14:22
+
+    {{-- PROGRESS --}}
+    <div class="bg-white dark:bg-cyberdark-800 rounded-2xl border border-gray-200 dark:border-cyberdark-700 p-5 mb-6 shadow-sm">
+        <div class="flex items-center justify-between gap-3 mb-3">
+            <div>
+                <p class="text-sm font-bold text-gray-800 dark:text-white">
+                    Progres Pengerjaan
+                </p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Jawab seluruh soal sebelum mengumpulkan ujian.
+                </p>
+            </div>
+
+            <div class="text-right">
+                <p class="text-xl font-black text-blue-600 dark:text-blue-400">
+                    <span x-text="jumlahTerjawab"></span>/{{ $totalSoal }}
+                </p>
+                <p class="text-xs text-gray-500 dark:text-gray-400">Soal terjawab</p>
+            </div>
+        </div>
+
+        <div class="w-full h-2.5 bg-gray-100 dark:bg-cyberdark-700 rounded-full overflow-hidden">
+            <div
+                class="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-300"
+                :style="'width: ' + progress + '%'"
+            ></div>
+        </div>
+    </div>
+
+    <form
+        id="formUjian"
+        action="{{ route('siswa.ujian.selesaikan', $hasilUjian->id) }}"
+        method="POST"
+        @submit="return konfirmasiKumpulkan($event)"
+    >
+        @csrf
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+            {{-- BAGIAN SOAL --}}
+            <div class="lg:col-span-8 space-y-5">
+
+                @foreach($soalUjians as $index => $soal)
+                    @php
+                        $jawabanLama = $jawabanTersimpan->get($soal->id)?->jawaban_siswa;
+                        $opsiSoal = is_array($soal->opsi)
+                            ? $soal->opsi
+                            : [];
+                    @endphp
+
+                    <div
+                        id="soal-{{ $index + 1 }}"
+                        x-show="nomorAktif === {{ $index + 1 }}"
+                        x-cloak
+                        class="bg-white dark:bg-cyberdark-800 rounded-2xl border border-gray-200 dark:border-cyberdark-700 shadow-sm overflow-hidden"
+                    >
+                        {{-- HEADER SOAL --}}
+                        <div class="p-5 md:p-6 border-b border-gray-100 dark:border-cyberdark-700">
+                            <div class="flex items-center justify-between gap-3">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-11 h-11 rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400 flex items-center justify-center font-black">
+                                        {{ str_pad($index + 1, 2, '0', STR_PAD_LEFT) }}
+                                    </div>
+
+                                    <div>
+                                        <p class="font-bold text-gray-900 dark:text-white">
+                                            Soal Nomor {{ $index + 1 }}
+                                        </p>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                            {{ $soal->tipe === 'esai' ? 'Soal Esai' : 'Pilihan Ganda' }}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <span class="text-xs font-bold px-3 py-1.5 rounded-lg bg-purple-100 text-purple-700 dark:bg-purple-500/10 dark:text-purple-400">
+                                    {{ $soal->exp }} EXP
+                                </span>
+                            </div>
+                        </div>
+
+                        {{-- ISI SOAL --}}
+                        <div class="p-5 md:p-7">
+                            <div class="text-base md:text-lg leading-relaxed font-medium text-gray-800 dark:text-gray-100 whitespace-pre-line">
+                                {{ $soal->pertanyaan }}
+                            </div>
+
+                            {{-- PILIHAN GANDA --}}
+                            @if($soal->tipe === 'pilihan_ganda')
+                                <div class="mt-7 space-y-3">
+                                    @foreach($opsiSoal as $opsi)
+                                        @php
+                                            $kode = $opsi['kode'] ?? '';
+                                            $teks = $opsi['teks'] ?? '';
+                                        @endphp
+
+                                        <label
+                                            class="flex items-start gap-4 p-4 rounded-xl border cursor-pointer transition-all duration-200"
+                                            :class="jawaban[{{ $soal->id }}] === @js($kode)
+                                                ? 'border-blue-500 bg-blue-50 dark:bg-blue-500/10 dark:border-blue-400'
+                                                : 'border-gray-200 dark:border-cyberdark-700 hover:border-blue-300 dark:hover:border-blue-500/50'"
+                                        >
+                                            <input
+                                                type="radio"
+                                                name="jawaban[{{ $soal->id }}]"
+                                                value="{{ $kode }}"
+                                                x-model="jawaban[{{ $soal->id }}]"
+                                                @checked($jawabanLama === $kode)
+                                                class="mt-1 w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                                            >
+
+                                            <span
+                                                class="w-8 h-8 shrink-0 rounded-lg flex items-center justify-center text-sm font-bold"
+                                                :class="jawaban[{{ $soal->id }}] === @js($kode)
+                                                    ? 'bg-blue-600 text-white'
+                                                    : 'bg-gray-100 text-gray-600 dark:bg-cyberdark-700 dark:text-gray-300'"
+                                            >
+                                                {{ $kode }}
+                                            </span>
+
+                                            <span class="flex-1 text-sm md:text-base text-gray-700 dark:text-gray-200 leading-relaxed">
+                                                {{ $teks }}
+                                            </span>
+
+                                            <i
+                                                x-show="jawaban[{{ $soal->id }}] === @js($kode)"
+                                                class="fa-solid fa-circle-check text-blue-600 dark:text-blue-400 mt-1"
+                                            ></i>
+                                        </label>
+                                    @endforeach
+                                </div>
+
+                            {{-- ESAI --}}
+                            @else
+                                <div class="mt-7">
+                                    <label class="block text-sm font-bold text-gray-700 dark:text-gray-200 mb-3">
+                                        Tuliskan Jawaban Anda
+                                    </label>
+
+                                    <textarea
+                                        name="jawaban[{{ $soal->id }}]"
+                                        x-model="jawaban[{{ $soal->id }}]"
+                                        rows="7"
+                                        placeholder="Tuliskan jawaban Anda secara jelas dan sistematis..."
+                                        class="w-full rounded-xl border border-gray-200 dark:border-cyberdark-700 bg-gray-50 dark:bg-cyberdark-900 text-gray-800 dark:text-gray-100 p-4 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-y placeholder:text-gray-400"
+                                    >{{ $jawabanLama }}</textarea>
+
+                                    <p class="text-xs text-gray-400 mt-2">
+                                        <i class="fa-solid fa-circle-info mr-1"></i>
+                                        Pastikan jawaban Anda sudah sesuai dengan pertanyaan.
+                                    </p>
+                                </div>
+                            @endif
+                        </div>
+
+                        {{-- NAVIGASI BAWAH --}}
+                        <div class="p-5 border-t border-gray-100 dark:border-cyberdark-700 flex items-center justify-between gap-3">
+                            <button
+                                type="button"
+                                @click="sebelumnya()"
+                                :disabled="nomorAktif === 1"
+                                class="px-4 py-2.5 rounded-xl border border-gray-200 dark:border-cyberdark-700 text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-cyberdark-700 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                            >
+                                <i class="fa-solid fa-arrow-left mr-2"></i>
+                                Sebelumnya
+                            </button>
+
+                            <button
+                                type="button"
+                                @click="selanjutnya()"
+                                x-show="nomorAktif < totalSoal"
+                                class="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold transition shadow-lg shadow-blue-500/20"
+                            >
+                                Selanjutnya
+                                <i class="fa-solid fa-arrow-right ml-2"></i>
+                            </button>
+
+                            <button
+                                type="button"
+                                @click="bukaKonfirmasi()"
+                                x-show="nomorAktif === totalSoal"
+                                class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold transition"
+                            >
+                                <i class="fa-solid fa-check mr-2"></i>
+                                Selesai
+                            </button>
+                        </div>
+                    </div>
+                @endforeach
+
+                @if($totalSoal === 0)
+                    <div class="bg-white dark:bg-cyberdark-800 rounded-2xl border border-gray-200 dark:border-cyberdark-700 p-10 text-center">
+                        <i class="fa-solid fa-circle-exclamation text-4xl text-amber-500 mb-4"></i>
+                        <h3 class="font-bold text-lg text-gray-900 dark:text-white">
+                            Belum Ada Soal
+                        </h3>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                            Ujian ini belum memiliki soal yang dapat dikerjakan.
+                        </p>
+                    </div>
+                @endif
+            </div>
+
+            {{-- SIDEBAR NAVIGASI --}}
+            <div class="lg:col-span-4">
+                <div class="lg:sticky lg:top-6 space-y-5">
+
+                    <div class="bg-white dark:bg-cyberdark-800 rounded-2xl border border-gray-200 dark:border-cyberdark-700 shadow-sm p-5">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-bold text-gray-900 dark:text-white">
+                                Navigasi Soal
+                            </h3>
+
+                            <span class="text-xs text-gray-500 dark:text-gray-400">
+                                {{ $totalSoal }} Soal
+                            </span>
+                        </div>
+
+                        <div class="grid grid-cols-5 gap-2">
+                            @foreach($soalUjians as $index => $soal)
+                                <button
+                                    type="button"
+                                    @click="pindahKe({{ $index + 1 }})"
+                                    class="aspect-square rounded-xl text-sm font-bold border transition-all"
+                                    :class="nomorAktif === {{ $index + 1 }}
+                                        ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-500/20'
+                                        : (sudahDijawab({{ $soal->id }})
+                                            ? 'bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/30'
+                                            : 'bg-gray-50 text-gray-600 border-gray-200 hover:border-blue-400 dark:bg-cyberdark-900 dark:text-gray-300 dark:border-cyberdark-700')"
+                                >
+                                    {{ $index + 1 }}
+                                </button>
+                            @endforeach
+                        </div>
+
+                        <div class="mt-5 space-y-2.5">
+                            <div class="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                                <span class="w-3 h-3 rounded bg-blue-600"></span>
+                                Soal sedang dibuka
+                            </div>
+
+                            <div class="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                                <span class="w-3 h-3 rounded bg-emerald-500"></span>
+                                Sudah dijawab
+                            </div>
+
+                            <div class="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                                <span class="w-3 h-3 rounded bg-gray-200 dark:bg-cyberdark-700"></span>
+                                Belum dijawab
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- RINGKASAN --}}
+                    <div class="bg-white dark:bg-cyberdark-800 rounded-2xl border border-gray-200 dark:border-cyberdark-700 shadow-sm p-5">
+                        <h3 class="font-bold text-gray-900 dark:text-white mb-4">
+                            Ringkasan Jawaban
+                        </h3>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-500/10">
+                                <p class="text-xs text-emerald-700 dark:text-emerald-400">
+                                    Terjawab
+                                </p>
+                                <p class="text-2xl font-black text-emerald-700 dark:text-emerald-400 mt-1"
+                                   x-text="jumlahTerjawab"></p>
+                            </div>
+
+                            <div class="p-3 rounded-xl bg-amber-50 dark:bg-amber-500/10">
+                                <p class="text-xs text-amber-700 dark:text-amber-400">
+                                    Belum dijawab
+                                </p>
+                                <p class="text-2xl font-black text-amber-700 dark:text-amber-400 mt-1"
+                                   x-text="totalSoal - jumlahTerjawab"></p>
+                            </div>
+                        </div>
+
+                        <button
+                            type="button"
+                            @click="bukaKonfirmasi()"
+                            class="w-full mt-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm transition shadow-lg shadow-emerald-500/20"
+                            @if($totalSoal === 0) disabled @endif
+                        >
+                            <i class="fa-solid fa-paper-plane mr-2"></i>
+                            Kumpulkan Ujian
+                        </button>
+
+                        <p class="text-xs text-center text-gray-400 mt-3">
+                            Periksa kembali jawaban sebelum dikumpulkan.
+                        </p>
+                    </div>
+
+                    {{-- INFORMASI --}}
+                    <div class="p-4 rounded-2xl bg-blue-50 border border-blue-100 dark:bg-blue-500/10 dark:border-blue-500/20">
+                        <div class="flex gap-3">
+                            <i class="fa-solid fa-lightbulb text-blue-600 dark:text-blue-400 mt-1"></i>
+                            <div>
+                                <p class="text-sm font-bold text-blue-800 dark:text-blue-300">
+                                    Tips Mengerjakan
+                                </p>
+                                <p class="text-xs text-blue-700 dark:text-blue-400 mt-1 leading-relaxed">
+                                    Baca pertanyaan dengan teliti, manfaatkan waktu dengan baik, dan pastikan semua jawaban sudah diperiksa.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </form>
+
+    {{-- MODAL KONFIRMASI --}}
+    <div
+        x-show="modalKonfirmasi"
+        x-cloak
+        class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+        @keydown.escape.window="modalKonfirmasi = false"
+    >
+        <div
+            @click.outside="modalKonfirmasi = false"
+            x-transition
+            class="w-full max-w-md bg-white dark:bg-cyberdark-800 rounded-3xl shadow-2xl p-6"
+        >
+            <div class="w-16 h-16 rounded-2xl bg-emerald-100 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto text-2xl">
+                <i class="fa-solid fa-paper-plane"></i>
+            </div>
+
+            <h3 class="text-xl font-black text-center text-gray-900 dark:text-white mt-5">
+                Kumpulkan Ujian?
+            </h3>
+
+            <p class="text-sm text-center text-gray-500 dark:text-gray-400 mt-2">
+                Pastikan Anda telah memeriksa seluruh jawaban. Setelah dikumpulkan, ujian tidak dapat dikerjakan kembali.
+            </p>
+
+            <div class="grid grid-cols-2 gap-3 mt-6">
+                <button
+                    type="button"
+                    @click="modalKonfirmasi = false"
+                    class="py-3 rounded-xl border border-gray-200 dark:border-cyberdark-700 text-gray-600 dark:text-gray-300 font-bold text-sm hover:bg-gray-50 dark:hover:bg-cyberdark-700 transition"
+                >
+                    Periksa Lagi
+                </button>
+
+                <button
+                    type="button"
+                    @click="kirimUjian()"
+                    class="py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm transition"
+                >
+                    Ya, Kumpulkan
+                </button>
+            </div>
+        </div>
+    </div>
+
+    {{-- MODAL WAKTU HABIS --}}
+    <div
+        x-show="waktuHabis"
+        x-cloak
+        class="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/70"
+    >
+        <div class="w-full max-w-sm bg-white dark:bg-cyberdark-800 rounded-3xl p-7 text-center shadow-2xl">
+            <div class="w-16 h-16 mx-auto rounded-2xl bg-red-100 dark:bg-red-500/10 text-red-600 dark:text-red-400 flex items-center justify-center text-2xl">
+                <i class="fa-solid fa-clock"></i>
+            </div>
+
+            <h3 class="text-xl font-black text-gray-900 dark:text-white mt-5">
+                Waktu Ujian Habis!
+            </h3>
+
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                Jawaban Anda sedang dikumpulkan secara otomatis.
+            </p>
+
+            <div class="mt-5 flex justify-center">
+                <i class="fa-solid fa-spinner fa-spin text-2xl text-blue-600"></i>
+            </div>
         </div>
     </div>
 </div>
 
-<div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-    
-    <div class="lg:col-span-8 space-y-4">
-        <div class="bg-white dark:bg-cyberdark-900 p-6 rounded-2xl border border-gray-200 dark:border-pink-950/20 shadow-sm relative overflow-hidden">
-            
-            <div class="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.02] select-none dark:opacity-[0.01]">
-                <p class="text-4xl font-mono font-black uppercase tracking-widest transform -rotate-45">SISWA-ESSAY-SECURE-2026</p>
-            </div>
+@endsection
 
-            <div class="flex items-center justify-between pb-3 mb-4 border-b border-gray-100 dark:border-pink-950/10">
-                <span id="current-question-badge" class="px-3 py-1 bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs font-mono font-bold rounded-lg border border-amber-500/20">
-                    SOAL ESSAY NOMOR 03
-                </span>
-                <span class="text-[10px] text-gray-400 font-mono"><i class="fa-solid fa-circle-info mr-1"></i> Bobot Maksimal: 25 Poin</span>
-            </div>
-
-            <div class="text-xs text-gray-700 dark:text-pink-100/90 leading-relaxed space-y-3 font-sans">
-                <p class="font-bold text-gray-800 dark:text-white text-sm">
-                    Studi Kasus: Reduksi Overfitting pada Model Deteksi Objek Medis
-                </p>
-                <p>
-                    Sebuah model jaringan CNN yang Anda latih untuk mendeteksi sel kanker mengalami gejala <strong>overfitting</strong> yang cukup parah, di mana akurasi data *training* mencapai 98% namun akurasi data *validation* tertahan di angka 62%.
-                </p>
-                <p class="font-bold text-gray-800 dark:text-white">
-                    Tugas Anda:
-                </p>
-                <ol class="list-decimal pl-4 space-y-1">
-                    <li>Analisislah mengapa fenomena tersebut dapat terjadi pada arsitektur ekstraksi fitur spasial!</li>
-                    <li>Berikan minimal 2 solusi konkret terkait manipulasi <em>hyperparameter</em> atau penambahan layer struktural untuk mengatasi masalah tersebut!</li>
-                    <li>Tuliskan contoh modifikasi sintaks pembuat modelnya secara ringkas!</li>
-                </ol>
-            </div>
-
-            <div class="mt-6 space-y-4">
-                <div>
-                    <label class="block text-[10px] font-mono font-bold text-gray-400 uppercase tracking-wider mb-1.5">
-                        <i class="fa-solid fa-pen-nib text-purple-500"></i> Lembar Lembar Jawaban Uraian Teori:
-                    </label>
-                    <textarea id="essay-text-answer" oninput="handleEssayTyping()" rows="6" placeholder="Tuliskan analisis argumentasi ilmiah Anda di sini secara detail..." class="w-full bg-gray-50 dark:bg-cyberdark-950 text-gray-800 dark:text-pink-100/90 p-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 border border-gray-200 dark:border-pink-950/30 text-xs leading-relaxed font-sans"></textarea>
-                    
-                    <div class="flex items-center justify-between text-[9px] text-gray-400 font-mono mt-1 px-1">
-                        <span id="char-counter">Jumlah Karakter: 0 (Minimal 20 karakter)</span>
-                        <span id="save-status" class="hidden text-emerald-500 font-bold"><i class="fa-solid fa-cloud-arrow-up"></i> Draft Tersimpan otomatis</span>
-                    </div>
-                </div>
-
-                <div>
-                    <div class="flex items-center justify-between mb-1.5">
-                        <label class="block text-[10px] font-mono font-bold text-gray-400 uppercase tracking-wider">
-                            <i class="fa-solid fa-code text-pink-500"></i> Lampiran Kode Program Pendukung (Opsional):
-                        </label>
-                        <span class="text-[9px] text-pink-400/60 font-mono">Format: Python / Keras</span>
-                    </div>
-                    <textarea id="essay-code-answer" rows="5" placeholder="# Tuliskan modifikasi baris kode arsitektur di sini jika diperlukan&#10;# Contoh: layers.Dropout(0.5)" class="w-full bg-gray-950 text-emerald-400 p-3.5 rounded-xl focus:outline-none focus:ring-1 focus:ring-pink-500 border border-gray-900 font-mono text-[11px] leading-relaxed resize-none shadow-inner"></textarea>
-                </div>
-            </div>
-        </div>
-
-        <div class="flex items-center justify-between p-4 bg-white dark:bg-cyberdark-900 rounded-2xl border border-gray-200 dark:border-pink-950/20 shadow-sm gap-2">
-            <button class="px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-cyberdark-800 dark:hover:bg-cyberdark-700 text-gray-700 dark:text-pink-200 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all">
-                <i class="fa-solid fa-arrow-left text-[10px]"></i> SEBELUMNYA
-            </button>
-
-            <button onclick="toggleDoubtfulStatus()" id="btn-ragu" class="px-4 py-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all">
-                <i class="fa-solid fa-question text-[10px]"></i> RAGU-RAGU
-            </button>
-
-            <button class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-md shadow-purple-600/10 transition-all">
-                SELANJUTNYA <i class="fa-solid fa-arrow-right text-[10px]"></i>
-            </button>
-        </div>
-    </div>
-
-    <div class="lg:col-span-4 space-y-4 lg:sticky lg:top-[74px]">
-        
-        <div class="bg-white dark:bg-cyberdark-900 p-5 rounded-2xl border border-gray-200 dark:border-pink-950/20 shadow-sm">
-            <div class="flex items-center justify-between pb-3 mb-4 border-b border-gray-100 dark:border-pink-950/10">
-                <h4 class="text-xs font-bold font-mono text-gray-400 dark:text-pink-400/50 uppercase tracking-wider flex items-center gap-1.5">
-                    <i class="fa-solid fa-th-large text-purple-500"></i> Navigator Essay
-                </h4>
-                <span class="font-mono text-[10px] text-gray-400">Tuntas: <b id="answered-count">0</b>/5 Soal</span>
-            </div>
-
-            <div class="grid grid-cols-5 gap-2 text-center font-mono text-xs font-black">
-                <button class="p-2 bg-emerald-500 text-white rounded-lg hover:opacity-90 transition-all shadow-sm">01</button>
-                <button class="p-2 bg-emerald-500 text-white rounded-lg hover:opacity-90 transition-all shadow-sm">02</button>
-                <button id="nav-node-essay" class="p-2 bg-purple-100 dark:bg-pink-950/40 text-purple-600 dark:text-pink-400 rounded-lg ring-2 ring-purple-500 transition-all">03</button>
-                <button class="p-2 bg-gray-50 dark:bg-cyberdark-950 text-gray-400 dark:text-pink-950/40 border border-gray-100 dark:border-pink-950/10 rounded-lg hover:bg-gray-100 dark:hover:bg-cyberdark-800 transition-all">04</button>
-                <button class="p-2 bg-gray-50 dark:bg-cyberdark-950 text-gray-400 dark:text-pink-950/40 border border-gray-100 dark:border-pink-950/10 rounded-lg hover:bg-gray-100 transition-all">05</button>
-            </div>
-
-            <div class="mt-4 pt-3 border-t border-gray-100 dark:border-pink-950/10 flex flex-wrap gap-x-4 gap-y-1.5 text-[10px] text-gray-400 font-mono">
-                <div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded bg-emerald-500"></span> Sudah Diisi</div>
-                <div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded bg-amber-500"></span> Ragu-ragu</div>
-                <div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded bg-gray-100 dark:bg-cyberdark-950 border dark:border-pink-950/20"></span> Belum Diisi</div>
-                <div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded bg-purple-100 dark:bg-pink-950/40 ring-1 ring-purple-500"></span> Aktif</div>
-            </div>
-        </div>
-
-        <div class="bg-white dark:bg-cyberdark-900 p-4 rounded-2xl border border-gray-200 dark:border-pink-950/20 shadow-sm">
-            <button onclick="confirmSubmitExam()" class="w-full px-4 py-3 bg-gradient-to-r from-red-500 to-pink-600 hover:opacity-95 text-white font-bold text-xs rounded-xl shadow-lg shadow-red-500/10 flex items-center justify-center gap-2 transition-all tracking-wider">
-                <i class="fa-solid fa-paper-plane text-[10px]"></i> KUMPULKAN JAWABAN ESSAY
-            </button>
-            <p class="text-[9px] text-gray-400 font-mono text-center mt-2">Pastikan argumentasi teks dan lampiran sintaks kode telah terisi penuh sebelum submit.</p>
-        </div>
-    </div>
-</div>
-
+@push('scripts')
 <script>
-    // 1. ENGINE COUNTDOWN TIMER
-    let totalSeconds = 1 * 60 * 60 + 14 * 60 + 22; 
-    const timerElement = document.getElementById('countdown-timer');
+    function ujianApp(config) {
+        return {
+            totalSoal: config.totalSoal,
+            sisaDetik: config.sisaDetik,
+            nomorAktif: 1,
+            jawaban: {},
+            modalKonfirmasi: false,
+            waktuHabis: false,
+            sudahMengirim: false,
 
-    const examInterval = setInterval(() => {
-        if (totalSeconds <= 0) {
-            clearInterval(examInterval);
-            timerElement.innerText = "WAKTU HABIS";
-            timerElement.className = "text-sm font-black text-red-500 animate-bounce";
-            return;
-        }
-        totalSeconds--;
-        let hrs = Math.floor(totalSeconds / 3600);
-        let mins = Math.floor((totalSeconds % 3600) / 60);
-        let secs = totalSeconds % 60;
-        timerElement.innerText = (hrs < 10 ? "0" + hrs : hrs) + ":" + (mins < 10 ? "0" + mins : mins) + ":" + (secs < 10 ? "0" + secs : secs);
-    }, 1000);
+            init() {
+                this.$nextTick(() => {
+                    // Ambil jawaban awal dari input yang sudah terisi.
+                    document.querySelectorAll('#formUjian input[type="radio"]:checked')
+                        .forEach(input => {
+                            const id = input.name.match(/\d+/)?.[0];
+                            if (id) this.jawaban[id] = input.value;
+                        });
 
-    // 2. DETEKSI AKSI KETIK ESSAY (AUTO-SAVE SIMULATION & INDIKATOR NAVIGASI)
-    let isDoubtful = false;
-    let typingTimer;
-    const activeNode = document.getElementById('nav-node-essay');
-    const txtAnswer = document.getElementById('essay-text-answer');
-    const charCounter = document.getElementById('char-counter');
-    const saveStatus = document.getElementById('save-status');
-    const answeredCount = document.getElementById('answered-count');
+                    document.querySelectorAll('#formUjian textarea')
+                        .forEach(textarea => {
+                            const id = textarea.name.match(/\d+/)?.[0];
+                            if (id && textarea.value.trim() !== '') {
+                                this.jawaban[id] = textarea.value;
+                            }
+                        });
+                });
 
-    function handleEssayTyping() {
-        const textLength = txtAnswer.value.trim().length;
-        charCounter.innerText = `Jumlah Karakter: ${textLength} (Minimal 20 karakter)`;
-        
-        // Munculkan efek menyala 'Saving Draft' ke server cloud local
-        saveStatus.classList.remove('hidden');
-        saveStatus.innerHTML = "<i class='fa-solid fa-spinner animate-spin text-purple-400'></i> Menyimpan draft...";
-        
-        clearTimeout(typingTimer);
-        typingTimer = setTimeout(() => {
-            saveStatus.innerHTML = "<i class='fa-solid fa-cloud-arrow-up'></i> Draft tersimpan otomatis";
-        }, 1000);
+                if (this.sisaDetik <= 0) {
+                    this.akhiriOtomatis();
+                    return;
+                }
 
-        // Jika panjang karakter memenuhi syarat ganti warna kotak navigasi kanan jadi hijau (Terisi)
-        if (!isDoubtful && textLength >= 20) {
-            activeNode.className = "p-2 bg-emerald-500 text-white rounded-lg ring-2 ring-purple-500 transition-all";
-            answeredCount.innerText = "3"; // Simulasi increment total tuntas
-        } else if (!isDoubtful && textLength < 20) {
-            activeNode.className = "p-2 bg-purple-100 dark:bg-pink-950/40 text-purple-600 dark:text-pink-400 rounded-lg ring-2 ring-purple-500 transition-all";
-            answeredCount.innerText = "2";
-        }
-    }
+                this.intervalTimer = setInterval(() => {
+                    if (this.sisaDetik > 0) {
+                        this.sisaDetik--;
+                    }
 
-    // 3. TOMBOL RAGU-RAGU FOR ESSAY
-    function toggleDoubtfulStatus() {
-        const btnRagu = document.getElementById('btn-ragu');
-        isDoubtful = !isDoubtful;
+                    if (this.sisaDetik <= 0) {
+                        this.akhiriOtomatis();
+                    }
+                }, 1000);
+            },
 
-        if(isDoubtful) {
-            btnRagu.className = "px-4 py-2 bg-amber-500 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all shadow-md shadow-amber-500/20";
-            activeNode.className = "p-2 bg-amber-500 text-white rounded-lg ring-2 ring-purple-500 transition-all animate-pulse";
-        } else {
-            btnRagu.className = "px-4 py-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all";
-            handleEssayTyping(); // Kalkulasi ulang status warna berdasar isi ketikan teks terakhir
-        }
-    }
+            get jumlahTerjawab() {
+                return Object.values(this.jawaban).filter(value =>
+                    value !== null &&
+                    value !== undefined &&
+                    String(value).trim() !== ''
+                ).length;
+            },
 
-    // 4. ENGINE PROMPT VALIDASI SUBMIT
-    function confirmSubmitExam() {
-        if (confirm("Apakah Anda yakin seluruh berkas lembar analisis essay dan sintaks program ini sudah benar? Jawaban akan segera dikunci oleh tim pengawas.")) {
-            alert("[System] Enkripsi teks essay berhasil dilakukan! Berkas telah dikirim ke server penilaian.");
-            window.location.href = "/ruang-belajar/materi";
+            get progress() {
+                if (this.totalSoal === 0) return 0;
+                return (this.jumlahTerjawab / this.totalSoal) * 100;
+            },
+
+            formatWaktu() {
+                const totalDetik = Math.max(0, Math.floor(this.sisaDetik));
+
+                const menit = Math.floor(totalDetik / 60);
+                const detik = totalDetik % 60;
+
+                return `${String(menit).padStart(2, '0')}:${String(detik).padStart(2, '0')}`;
+            },
+
+            sudahDijawab(id) {
+                const value = this.jawaban[id];
+
+                return value !== null &&
+                    value !== undefined &&
+                    String(value).trim() !== '';
+            },
+
+            pindahKe(nomor) {
+                this.nomorAktif = nomor;
+
+                this.$nextTick(() => {
+                    document.getElementById('soal-' + nomor)?.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                });
+            },
+
+            sebelumnya() {
+                if (this.nomorAktif > 1) {
+                    this.pindahKe(this.nomorAktif - 1);
+                }
+            },
+
+            selanjutnya() {
+                if (this.nomorAktif < this.totalSoal) {
+                    this.pindahKe(this.nomorAktif + 1);
+                }
+            },
+
+            bukaKonfirmasi() {
+                this.modalKonfirmasi = true;
+            },
+
+            konfirmasiKumpulkan(event) {
+                if (this.sudahMengirim) return true;
+
+                event.preventDefault();
+                this.modalKonfirmasi = true;
+                return false;
+            },
+
+            kirimUjian() {
+                if (this.sudahMengirim) return;
+
+                this.sudahMengirim = true;
+                clearInterval(this.intervalTimer);
+
+                document.getElementById('formUjian').submit();
+            },
+
+            akhiriOtomatis() {
+                if (this.sudahMengirim) return;
+
+                this.sudahMengirim = true;
+                this.waktuHabis = true;
+
+                clearInterval(this.intervalTimer);
+
+                document.getElementById('formUjian').submit();
+            }
         }
     }
 </script>
-@endsection
+@endpush

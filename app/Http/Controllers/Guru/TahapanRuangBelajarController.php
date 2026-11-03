@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Guru;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\RuangBelajar;
+use App\Models\RuangUjian;
 use App\Models\Tahapan;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -52,65 +53,123 @@ class TahapanRuangBelajarController extends Controller
 
     public function store(Request $request, $ruang_belajar_id)
     {
-        $this->authorizeGuruAccess($ruang_belajar_id);
-        $request->validate([
+        $ruangBelajar = $this->authorizeGuruAccess($ruang_belajar_id);
+
+        $validated = $request->validate([
             'judul_tahapan' => 'required|string|max:255',
-            'tipe'          => 'required|in:apersepsi,ice_breaking,pre_test,materi,lkpd,evaluasi,kesimpulan,refleksi,post_test,tindak_lanjut',
-            'urutan'        => 'required|integer|min:1',
-            'status'        => 'required|in:selesai,aktif,terkunci',
-            'icon'          => 'required|string|max:50',
-            'xp_reward'     => 'required|integer|min:0',
+
+            'tipe' => [
+                'required',
+                'in:apersepsi,ice_breaking,jeda_hening,pre_test,materi,lkpd,evaluasi,kesimpulan,refleksi,post_test,tindak_lanjut'
+            ],
+
+            'urutan' => 'required|integer|min:1',
+
+            'status' => 'required|in:selesai,aktif,terkunci',
+
+            'icon' => 'required|string|max:50',
+
+            'xp_reward' => 'nullable|required_unless:tipe,pre_test,post_test|integer|min:0',
         ]);
 
-        $tahapan = Tahapan::create([
-            'ruang_belajar_id' => $ruang_belajar_id,
-            'judul_tahapan'    => $request->judul_tahapan,
-            'tipe'             => $request->tipe,
-            'urutan'           => $request->urutan,
-            'status'           => $request->status,
-            'icon'             => $request->icon,
-            'xp_reward'        => $request->xp_reward,
+        $tipeUjian = in_array($validated['tipe'], [
+            'pre_test',
+            'post_test'
         ]);
+
+        DB::transaction(function () use ($validated, $ruangBelajar, $tipeUjian) {
+
+            Tahapan::create([
+                'ruang_belajar_id' => $ruangBelajar->id,
+                'judul_tahapan' => $validated['judul_tahapan'],
+                'tipe' => $validated['tipe'],
+                'urutan' => $validated['urutan'],
+                'status' => $validated['status'],
+                'icon' => $validated['icon'],
+
+                // EXP ujian dihitung dari hasil pengerjaan siswa.
+                'xp_reward' => $tipeUjian
+                    ? 0
+                    : ($validated['xp_reward'] ?? 0),
+
+                // Ruang ujian dipilih pada halaman konfigurasi konten.
+                'ruang_ujian_id' => null,
+            ]);
+        });
 
         return redirect()
-            ->route('guru.ruang-belajar.tahapan.index', [$ruang_belajar_id])
+            ->route('guru.ruang-belajar.tahapan.index', $ruang_belajar_id)
             ->with('success', 'Tahapan berhasil dibuat! Silakan atur konten aktivitasnya.');
     }
     public function edit($ruang_belajar_id, $tahapan_id)
     {
         $ruangBelajar = $this->authorizeGuruAccess($ruang_belajar_id);
-        $ruangBelajar = RuangBelajar::findOrFail($ruang_belajar_id);
-        $tahapan = Tahapan::where('ruang_belajar_id', $ruang_belajar_id)
+
+        $tahapan = Tahapan::where('ruang_belajar_id', $ruangBelajar->id)
+            ->with('ruangUjian')
             ->findOrFail($tahapan_id);
 
-        return view('guru.tahapan-ruang-belajar.edit', compact('ruangBelajar', 'tahapan'));
+        return view(
+            'guru.tahapan-ruang-belajar.edit',
+            compact('ruangBelajar', 'tahapan')
+        );
     }
     public function update(Request $request, $ruang_belajar_id, $id)
     {
-        $this->authorizeGuruAccess($ruang_belajar_id);
-        $request->validate([
+        $ruangBelajar = $this->authorizeGuruAccess($ruang_belajar_id);
+
+        $tahapan = Tahapan::where('ruang_belajar_id', $ruangBelajar->id)
+            ->findOrFail($id);
+
+        $validated = $request->validate([
             'judul_tahapan' => 'required|string|max:255',
-            'tipe'          => 'required|in:apersepsi,ice_breaking,pre_test,materi,lkpd,evaluasi,kesimpulan,refleksi,post_test,tindak_lanjut',
-            'urutan'        => 'required|integer|min:1',
-            'status'        => 'required|in:selesai,aktif,terkunci',
-            'icon'          => 'required|string|max:50',
-            'xp_reward'     => 'required|integer|min:0',
+
+            'tipe' => [
+                'required',
+                'in:apersepsi,ice_breaking,jeda_hening,pre_test,materi,lkpd,evaluasi,kesimpulan,refleksi,post_test,tindak_lanjut'
+            ],
+
+            'urutan' => 'required|integer|min:1',
+
+            'status' => 'required|in:selesai,aktif,terkunci',
+
+            'icon' => 'required|string|max:50',
+
+            'xp_reward' => 'nullable|required_unless:tipe,pre_test,post_test|integer|min:0',
         ]);
 
-        $tahapan = Tahapan::where('ruang_belajar_id', $ruang_belajar_id)
-                        ->where('id', $id)
-                        ->firstOrFail();
-
-
-        $tahapan->update([
-            'judul_tahapan' => $request->judul_tahapan,
-            'tipe'             => $request->tipe,
-            'urutan'        => $request->urutan,
-            'status'        => $request->status,
-            'icon'          => $request->icon,
-            'xp_reward'     => $request->xp_reward,
+        $tipeUjian = in_array($validated['tipe'], [
+            'pre_test',
+            'post_test'
         ]);
 
+        // Pertahankan Ruang Ujian hanya jika tipe tetap berupa ujian.
+        $ruangUjianId = $tipeUjian
+            ? $tahapan->ruang_ujian_id
+            : null;
+
+        // Jika tipe ujian berubah dari aktivitas biasa,
+        // guru perlu memasang Ruang Ujian kembali.
+        DB::transaction(function () use (
+            $tahapan,
+            $validated,
+            $tipeUjian,
+            $ruangUjianId
+        ) {
+            $tahapan->update([
+                'judul_tahapan' => $validated['judul_tahapan'],
+                'tipe' => $validated['tipe'],
+                'urutan' => $validated['urutan'],
+                'status' => $validated['status'],
+                'icon' => $validated['icon'],
+
+                'xp_reward' => $tipeUjian
+                    ? 0
+                    : ($validated['xp_reward'] ?? 0),
+
+                'ruang_ujian_id' => $ruangUjianId,
+            ]);
+        });
 
         return redirect()
             ->route('guru.ruang-belajar.tahapan.index', $ruang_belajar_id)

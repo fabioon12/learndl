@@ -28,12 +28,6 @@ class Materi extends Model
     {
         return $this->hasMany(Submateri::class, 'materi_id')->orderBy('urutan', 'asc');
     }
-    public function siswa()
-    {
-        return $this->belongsToMany(User::class, 'materi_users', 'materi_id', 'user_id')
-                    ->using(MateriUser::class)
-                    ->withTimestamps();
-    }
     public function users()
     {
         return $this->belongsToMany(
@@ -42,6 +36,12 @@ class Materi extends Model
             'materi_id',
             'user_id'
         )->withTimestamps();
+    }
+
+    // Alias relasi siswa
+    public function siswa()
+    {
+        return $this->users();
     }
 
 }

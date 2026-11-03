@@ -19,6 +19,7 @@ return new class extends Migration
             $table->enum('tipe', [
                 'apersepsi', 
                 'ice_breaking', 
+                'jeda_hening',
                 'pre_test', 
                 'materi', 
                 'lkpd', 

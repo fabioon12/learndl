@@ -43,6 +43,7 @@
                         class="w-full px-4 py-3 rounded-2xl bg-white dark:bg-cyberdark-800 border border-gray-200 dark:border-pink-950/30 text-xs text-gray-800 dark:text-white focus:outline-none focus:border-indigo-500 font-semibold transition">
                     <option value="apersepsi">💡 Apersepsi (Teks & Pertanyaan Pemantik + Forum Diskusi)</option>
                     <option value="ice_breaking">🎮 Ice Breaking (Input Video / Gambar)</option>
+                    <option value="jeda_hening">🧘 Jeda Hening & Check-in (Kesadaran Diri & Pernapasan)</option>
                     <option value="pre_test">📝 Pre-Test (Pilih dari Ruang Ujian)</option>
                     <option value="materi">📚 Materi (Ambil dari Ruang Materi)</option>
                     <option value="lkpd">👥 LKPD (Tugas Individu/Kelompok & Upload File)</option>
@@ -192,22 +193,28 @@
                 </div>
 
                 <!-- XP Reward -->
-                <div class="space-y-1.5 sm:col-span-1">
+                <div class="space-y-1.5 sm:col-span-1" id="xpRewardWrapper">
                     <label for="xp_reward" class="block text-xs font-bold text-gray-700 dark:text-gray-300">
                         Bonus XP (Reward Stage) <span class="text-rose-500">*</span>
                     </label>
+
                     <div class="relative">
-                        <input type="number" 
-                               name="xp_reward" 
-                               id="xp_reward" 
-                               value="{{ old('xp_reward', 100) }}"
-                               step="50"
-                               min="0"
-                               required
-                               class="w-full pl-4 pr-12 py-3 rounded-2xl bg-gray-50 dark:bg-cyberdark-800 border border-gray-200 dark:border-pink-950/30 text-xs text-gray-800 dark:text-white focus:outline-none focus:border-indigo-500 transition">
-                        <span class="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-black text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-md">XP</span>
+                        <input type="number"
+                            name="xp_reward"
+                            id="xp_reward"
+                            value="{{ old('xp_reward', 100) }}"
+                            step="50"
+                            min="0"
+                            class="w-full pl-4 pr-12 py-3 rounded-2xl bg-gray-50 dark:bg-cyberdark-800 border border-gray-200 dark:border-pink-950/30 text-xs text-gray-800 dark:text-white focus:outline-none focus:border-indigo-500 transition">
+
+                        <span class="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-black text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-md">
+                            XP
+                        </span>
                     </div>
-                    <p class="text-[10px] text-gray-400">XP yang didapatkan siswa setelah menyelesaikan tahapan ini.</p>
+
+                    <p class="text-[10px] text-gray-400" id="xpRewardDescription">
+                        XP yang didapatkan siswa setelah menyelesaikan tahapan ini.
+                    </p>
                 </div>
 
             </div>
@@ -228,4 +235,29 @@
 
     </div>
 </div>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const tipeSelect = document.querySelector('[name="tipe"]');
+    const xpWrapper = document.getElementById('xpRewardWrapper');
+    const xpInput = document.getElementById('xp_reward');
+
+    if (!tipeSelect || !xpWrapper) return;
+
+    function aturTampilanXP() {
+        const tipe = tipeSelect.value;
+        const tanpaBonusManual = ['materi', 'pre_test', 'post_test'].includes(tipe);
+
+        xpWrapper.style.display = tanpaBonusManual ? 'none' : 'block';
+
+        if (tanpaBonusManual && xpInput) {
+            xpInput.value = 0;
+        } else if (xpInput && (!xpInput.value || Number(xpInput.value) === 0)) {
+            xpInput.value = 100;
+        }
+    }
+
+    tipeSelect.addEventListener('change', aturTampilanXP);
+    aturTampilanXP();
+});
+</script>
 @endsection

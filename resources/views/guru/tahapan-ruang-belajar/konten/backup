@@ -1,0 +1,307 @@
+@php
+    $konten = $tahapan->konten ?? [];
+
+    $forumAktif = old(
+        'konten.aktif_forum',
+        $konten['aktif_forum'] ?? 0
+    );
+@endphp
+
+<div class="max-w-3xl mx-auto space-y-6 py-6">
+
+    <!-- Header Navigasi -->
+    <div class="flex items-center justify-between">
+        <a href="{{ route('guru.ruang-belajar.tahapan.index', $ruangBelajar->id) }}"
+           class="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white/80 dark:bg-cyberdark-900/80 backdrop-blur-xl border border-gray-200/80 dark:border-pink-950/30 text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 text-xs font-bold transition-all shadow-sm">
+            <i class="fa-solid fa-arrow-left text-xs text-indigo-500"></i>
+            <span>Kembali ke Peta Tahapan</span>
+        </a>
+    </div>
+
+    <!-- Card Konfigurasi -->
+    <div class="bg-white/90 dark:bg-cyberdark-900/90 backdrop-blur-2xl border border-gray-100 dark:border-pink-950/30 rounded-3xl p-6 sm:p-8 shadow-xl space-y-6">
+
+        <!-- Header -->
+        <div class="flex items-center gap-3.5 pb-4 border-b border-gray-100 dark:border-pink-950/20">
+            <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-500 to-orange-600 text-white flex items-center justify-center text-xl shadow-md shadow-orange-500/20 shrink-0">
+                <i class="fa-solid fa-lightbulb"></i>
+            </div>
+
+            <div>
+                <h2 class="text-base sm:text-lg font-black text-gray-900 dark:text-white">
+                    Konfigurasi Apersepsi
+                </h2>
+                <p class="text-xs text-gray-400">
+                    Atur materi pengantar dan aktivitas awal pembelajaran untuk tahapan:
+                    <span class="font-bold text-amber-500">
+                        {{ $tahapan->judul_tahapan }}
+                    </span>
+                </p>
+            </div>
+        </div>
+
+        <form
+            action="{{ route('guru.ruang-belajar.tahapan.update', [$ruangBelajar->id, $tahapan->id]) }}"
+            method="POST"
+            enctype="multipart/form-data"
+            class="space-y-6"
+            x-data="{
+                mediaType: @js(old('konten.tipe_media', $konten['tipe_media'] ?? 'teks')),
+                forumEnabled: @js((bool) $forumAktif)
+            }"
+        >
+            @csrf
+            @method('PUT')
+
+            <div class="space-y-2">
+                <label class="block text-xs font-bold text-gray-700 dark:text-gray-300">
+                    Teks / Pengantar Apersepsi
+                    <span class="text-rose-500">*</span>
+                </label>
+
+                <textarea
+                    name="konten[teks_apersepsi]"
+                    rows="5"
+                    required
+                    placeholder="Tuliskan teks pengantar, cerita pemancing, fenomena, atau gambaran awal materi..."
+                    class="w-full px-4 py-3 rounded-2xl bg-gray-50 dark:bg-cyberdark-800 border border-gray-200 dark:border-pink-950/30 text-xs text-gray-800 dark:text-white focus:outline-none focus:border-amber-500 transition"
+                >{{ old('konten.teks_apersepsi', $konten['teks_apersepsi'] ?? '') }}</textarea>
+
+                <p class="text-[10px] text-gray-400">
+                    Teks ini akan ditampilkan langsung pada halaman belajar siswa.
+                </p>
+            </div>
+
+            <!-- ================================== -->
+            <!-- 2. MEDIA PENDUKUNG -->
+            <!-- ================================== -->
+
+            <div class="space-y-3">
+
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-bold text-gray-700 dark:text-gray-300">
+                        Media Pendukung Apersepsi
+                    </label>
+
+                    <select
+                        x-model="mediaType"
+                        name="konten[tipe_media]"
+                        class="w-full px-4 py-3 rounded-2xl bg-gray-50 dark:bg-cyberdark-800 border border-gray-200 dark:border-pink-950/30 text-xs text-gray-800 dark:text-white focus:outline-none focus:border-amber-500 transition font-semibold"
+                    >
+                        <option value="teks">Hanya Teks Saja</option>
+                        <option value="youtube">Video YouTube</option>
+                        <option value="gambar">Upload Gambar / Ilustrasi</option>
+                    </select>
+                </div>
+
+                <!-- Input YouTube -->
+                <div x-show="mediaType === 'youtube'" x-cloak class="space-y-2">
+
+                    <label class="block text-xs font-bold text-gray-700 dark:text-gray-300">
+                        URL Video YouTube
+                    </label>
+
+                    <input
+                        type="url"
+                        name="konten[youtube_url]"
+                        value="{{ old('konten.youtube_url', $konten['youtube_url'] ?? '') }}"
+                        placeholder="https://www.youtube.com/watch?v=..."
+                        class="w-full px-4 py-3 rounded-2xl bg-gray-50 dark:bg-cyberdark-800 border border-gray-200 dark:border-pink-950/30 text-xs text-gray-800 dark:text-white focus:outline-none focus:border-amber-500 transition"
+                    >
+
+                    <p class="text-[10px] text-gray-400">
+                        Masukkan link video YouTube yang akan digunakan sebagai media pengantar.
+                    </p>
+                </div>
+
+                <!-- Upload Gambar -->
+                <div x-show="mediaType === 'gambar'" x-cloak class="space-y-2">
+
+                    <label class="block text-xs font-bold text-gray-700 dark:text-gray-300">
+                        Upload Gambar Apersepsi
+                    </label>
+
+                    @if(!empty($konten['gambar_path']))
+                        <div class="inline-block p-2 rounded-2xl bg-gray-50 dark:bg-cyberdark-800 border border-gray-200 dark:border-pink-950/30">
+                            <img
+                                src="{{ asset('storage/' . $konten['gambar_path']) }}"
+                                alt="Gambar Apersepsi"
+                                class="w-48 h-32 object-cover rounded-xl"
+                            >
+                            <p class="text-[10px] text-gray-400 mt-2 text-center">
+                                Gambar saat ini
+                            </p>
+                        </div>
+                    @endif
+
+                    <input
+                        type="file"
+                        name="gambar_apersepsi"
+                        accept="image/*"
+                        class="w-full px-3 py-2 rounded-2xl bg-gray-50 dark:bg-cyberdark-800 border border-gray-200 dark:border-pink-950/30 text-[11px] text-gray-500 file:mr-3 file:py-1 file:px-3 file:rounded-xl file:border-0 file:text-[10px] file:font-bold file:bg-amber-50 file:text-amber-600"
+                    >
+
+                    <p class="text-[10px] text-gray-400">
+                        Gunakan gambar atau ilustrasi yang relevan dengan materi pembelajaran.
+                    </p>
+                </div>
+
+            </div>
+
+
+            <div class="pt-5 border-t border-gray-100 dark:border-pink-950/20 space-y-4">
+
+                <div>
+                    <span class="text-[10px] font-extrabold text-indigo-500 uppercase tracking-wider">
+                        Interaksi Pembelajaran
+                    </span>
+
+                    <h3 class="text-sm font-black text-gray-900 dark:text-white mt-1">
+                        Pengaturan Forum Diskusi
+                    </h3>
+
+                    <p class="text-[11px] text-gray-400 mt-1">
+                        Tentukan apakah siswa diperbolehkan menyampaikan pendapat dan berdiskusi pada tahap apersepsi.
+                    </p>
+                </div>
+
+                <!-- Toggle Forum -->
+                <div class="p-4 rounded-2xl border transition-all duration-300"
+                     :class="forumEnabled
+                        ? 'bg-indigo-50/70 dark:bg-indigo-950/20 border-indigo-200 dark:border-indigo-900/50'
+                        : 'bg-gray-50 dark:bg-cyberdark-800 border-gray-200 dark:border-pink-950/20'">
+
+                    <div class="flex items-center justify-between gap-4">
+
+                        <div class="flex items-center gap-3">
+
+                            <div class="w-11 h-11 rounded-xl flex items-center justify-center text-lg shrink-0 transition"
+                                 :class="forumEnabled
+                                    ? 'bg-indigo-500 text-white'
+                                    : 'bg-gray-200 dark:bg-cyberdark-700 text-gray-500'">
+
+                                <i class="fa-solid fa-comments"></i>
+                            </div>
+
+                            <div>
+                                <p class="text-xs font-extrabold text-gray-800 dark:text-white">
+                                    Aktifkan Forum Diskusi
+                                </p>
+
+                                <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-1"
+                                   x-text="forumEnabled
+                                    ? 'Forum diskusi akan ditampilkan kepada siswa.'
+                                    : 'Forum diskusi tidak ditampilkan kepada siswa.'">
+                                </p>
+                            </div>
+
+                        </div>
+
+                        <!-- Toggle Switch -->
+                        <label class="relative inline-flex items-center cursor-pointer shrink-0">
+
+                            <input
+                                type="hidden"
+                                name="konten[aktif_forum]"
+                                value="0"
+                            >
+
+                            <input
+                                type="checkbox"
+                                name="konten[aktif_forum]"
+                                value="1"
+                                x-model="forumEnabled"
+                                class="sr-only peer"
+                            >
+
+                            <div class="w-12 h-6 bg-gray-300 dark:bg-gray-600 rounded-full peer
+                                peer-checked:bg-indigo-600
+                                after:content-[''] after:absolute after:top-0.5 after:left-0.5
+                                after:bg-white after:rounded-full after:h-5 after:w-5
+                                after:transition-all peer-checked:after:translate-x-6">
+                            </div>
+
+                        </label>
+
+                    </div>
+
+                    <div class="mt-3 flex items-center gap-2 text-[10px] font-bold"
+                         :class="forumEnabled ? 'text-indigo-600' : 'text-gray-400'">
+
+                        <i class="fa-solid"
+                           :class="forumEnabled ? 'fa-circle-check' : 'fa-circle-minus'">
+                        </i>
+
+                        <span x-text="forumEnabled ? 'FORUM DISKUSI AKTIF' : 'FORUM DISKUSI NONAKTIF'"></span>
+                    </div>
+
+                </div>
+
+                <!-- Pengaturan Pertanyaan Pemantik -->
+                <div
+                    x-show="forumEnabled"
+                    x-cloak
+                    x-transition
+                    class="space-y-2"
+                >
+
+                    <label class="block text-xs font-bold text-gray-700 dark:text-gray-300">
+                        Pertanyaan Pemantik
+                        <span class="text-rose-500">*</span>
+                    </label>
+
+                    <textarea
+                        name="konten[pertanyaan_pemantik]"
+                        rows="3"
+                        :required="forumEnabled"
+                        placeholder="Contoh: Mengapa program yang kita buat menghasilkan output yang tidak sesuai dengan harapan?"
+                        class="w-full px-4 py-3 rounded-2xl bg-gray-50 dark:bg-cyberdark-800 border border-gray-200 dark:border-pink-950/30 text-xs text-gray-800 dark:text-white focus:outline-none focus:border-indigo-500 transition"
+                    >{{ old('konten.pertanyaan_pemantik', $konten['pertanyaan_pemantik'] ?? '') }}</textarea>
+
+                    <p class="text-[10px] text-gray-400">
+                        Pertanyaan ini akan ditampilkan pada halaman siswa sebagai pemantik diskusi.
+                    </p>
+
+                    <!-- Preview Pertanyaan -->
+                    <div class="p-4 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/40">
+                        <p class="text-[10px] font-extrabold text-indigo-500 uppercase tracking-wider mb-2">
+                            <i class="fa-solid fa-eye mr-1"></i>
+                            Preview Forum Siswa
+                        </p>
+
+                        <p class="text-xs text-indigo-900 dark:text-indigo-200 font-semibold">
+                            Pertanyaan pemantik akan ditampilkan di bagian atas forum diskusi siswa.
+                        </p>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- ================================== -->
+            <!-- 4. TOMBOL SIMPAN -->
+            <!-- ================================== -->
+
+            <div class="pt-5 flex items-center justify-end gap-3 border-t border-gray-100 dark:border-pink-950/20">
+
+                <a
+                    href="{{ route('guru.ruang-belajar.tahapan.index', $ruangBelajar->id) }}"
+                    class="px-5 py-2.5 rounded-2xl bg-gray-100 dark:bg-cyberdark-800 text-gray-600 dark:text-gray-300 text-xs font-bold transition"
+                >
+                    Batal
+                </a>
+
+                <button
+                    type="submit"
+                    class="px-6 py-2.5 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white text-xs font-extrabold shadow-md shadow-orange-500/20 transition active:scale-95 cursor-pointer flex items-center gap-2"
+                >
+                    <i class="fa-solid fa-save"></i>
+                    <span>Simpan Konfigurasi Apersepsi</span>
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+</div>

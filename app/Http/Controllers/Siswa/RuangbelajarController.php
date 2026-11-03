@@ -43,8 +43,6 @@ class RuangbelajarController extends Controller
         $siswa = Auth::user();
 
         $query = RuangBelajar::with(['user', 'guru'])
-            // Filter Target Sekolah: Cek apakah school_name siswa ada di array target_schools (JSON)
-            // Atau fallback ke sekolah milik guru pembuat untuk data lama
             ->where(function ($q) use ($siswa) {
                 $q->whereJsonContains('target_schools', $siswa->school_name)
                 ->orWhereHas('guru', function ($guruQuery) use ($siswa) {
@@ -54,7 +52,6 @@ class RuangbelajarController extends Controller
                     $userQuery->where('school_name', $siswa->school_name);
                 });
             })
-            // Filter Utama: Sembunyikan jika siswa sudah mengambil ruang belajar ini
             ->whereDoesntHave('siswa', function ($q) use ($siswa) {
                 $q->where('ruang_belajar_users.user_id', $siswa->id);
             });
@@ -91,6 +88,7 @@ class RuangbelajarController extends Controller
 
         return view('siswa.ruang-belajar.eksplorasi.index', compact('ruangBelajars', 'stats'));
     }
+    
 
     public function enroll($id)
     {

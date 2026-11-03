@@ -42,17 +42,18 @@
                         id="tipe" 
                         required
                         class="w-full px-4 py-3 rounded-2xl bg-white dark:bg-cyberdark-800 border border-gray-200 dark:border-pink-950/30 text-xs text-gray-800 dark:text-white focus:outline-none focus:border-indigo-500 font-semibold transition">
-                    <option value="" disabled {{ old('tipe', $tahapan->tipe) ? '' : 'selected' }}>-- Pilih Tipe Aktivitas --</option>
-                    <option value="apersepsi" {{ old('tipe', $tahapan->tipe) == 'apersepsi' ? 'selected' : '' }}>💡 Apersepsi (Teks & Pertanyaan Pemantik + Forum Diskusi)</option>
-                    <option value="ice_breaking" {{ old('tipe', $tahapan->tipe) == 'ice_breaking' ? 'selected' : '' }}>🎮 Ice Breaking (Input Video / Gambar)</option>
-                    <option value="pre_test" {{ old('tipe', $tahapan->tipe) == 'pre_test' ? 'selected' : '' }}>📝 Pre-Test (Pilih dari Ruang Ujian)</option>
-                    <option value="materi" {{ old('tipe', $tahapan->tipe) == 'materi' ? 'selected' : '' }}>📚 Materi (Ambil dari Ruang Materi)</option>
-                    <option value="lkpd" {{ old('tipe', $tahapan->tipe) == 'lkpd' ? 'selected' : '' }}>👥 LKPD (Tugas Individu/Kelompok & Upload File)</option>
-                    <option value="evaluasi" {{ old('tipe', $tahapan->tipe) == 'evaluasi' ? 'selected' : '' }}>❓ Evaluasi (Input Pertanyaan & Kendala Kebingungan)</option>
-                    <option value="kesimpulan" {{ old('tipe', $tahapan->tipe) == 'kesimpulan' ? 'selected' : '' }}>📌 Kesimpulan (Teks/Gambar & Forum Diskusi)</option>
-                    <option value="refleksi" {{ old('tipe', $tahapan->tipe) == 'refleksi' ? 'selected' : '' }}>⭐ Refleksi (Pertanyaan & Bintang Kepuasan)</option>
-                    <option value="post_test" {{ old('tipe', $tahapan->tipe) == 'post_test' ? 'selected' : '' }}>🏁 Post-Test (Pilih dari Ruang Ujian)</option>
-                    <option value="tindak_lanjut" {{ old('tipe', $tahapan->tipe) == 'tindak_lanjut' ? 'selected' : '' }}>🚀 Tindak Lanjut (Materi / Proyek & Pengumpulan Tugas)</option>
+                    <option value="" disabled {{ old('tipe', $tahapan->tipe ?? '') ? '' : 'selected' }}>-- Pilih Tipe Aktivitas --</option>
+                    <option value="apersepsi" {{ old('tipe', $tahapan->tipe ?? '') == 'apersepsi' ? 'selected' : '' }}>💡 Apersepsi (Teks & Pertanyaan Pemantik + Forum Diskusi)</option>
+                    <option value="ice_breaking" {{ old('tipe', $tahapan->tipe ?? '') == 'ice_breaking' ? 'selected' : '' }}>🎮 Ice Breaking (Input Video / Gambar)</option>
+                    <option value="jeda_hening" {{ old('tipe', $tahapan->tipe ?? '') == 'jeda_hening' ? 'selected' : '' }}>🧘 Jeda Hening & Check-in (Kesadaran Diri & Pernapasan)</option>
+                    <option value="pre_test" {{ old('tipe', $tahapan->tipe ?? '') == 'pre_test' ? 'selected' : '' }}>📝 Pre-Test (Pilih dari Ruang Ujian)</option>
+                    <option value="materi" {{ old('tipe', $tahapan->tipe ?? '') == 'materi' ? 'selected' : '' }}>📚 Materi (Ambil dari Ruang Materi)</option>
+                    <option value="lkpd" {{ old('tipe', $tahapan->tipe ?? '') == 'lkpd' ? 'selected' : '' }}>👥 LKPD (Tugas Individu/Kelompok & Upload File)</option>
+                    <option value="evaluasi" {{ old('tipe', $tahapan->tipe ?? '') == 'evaluasi' ? 'selected' : '' }}>❓ Evaluasi (Input Pertanyaan & Kendala Kebingungan)</option>
+                    <option value="kesimpulan" {{ old('tipe', $tahapan->tipe ?? '') == 'kesimpulan' ? 'selected' : '' }}>📌 Kesimpulan (Teks/Gambar & Forum Diskusi)</option>
+                    <option value="refleksi" {{ old('tipe', $tahapan->tipe ?? '') == 'refleksi' ? 'selected' : '' }}>⭐ Refleksi (Pertanyaan & Bintang Kepuasan)</option>
+                    <option value="post_test" {{ old('tipe', $tahapan->tipe ?? '') == 'post_test' ? 'selected' : '' }}>🏁 Post-Test (Pilih dari Ruang Ujian)</option>
+                    <option value="tindak_lanjut" {{ old('tipe', $tahapan->tipe ?? '') == 'tindak_lanjut' ? 'selected' : '' }}>🚀 Tindak Lanjut (Materi / Proyek & Pengumpulan Tugas)</option>
                 </select>
                 <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-1">Ubah tipe aktivitas tahapan jika diperlukan.</p>
                 @error('tipe')
@@ -206,21 +207,29 @@
                 </div>
 
                 <!-- XP Reward -->
-                <div class="space-y-1.5 sm:col-span-1">
+                <div id="xpRewardWrapper" class="space-y-1.5 sm:col-span-1">
                     <label for="xp_reward" class="block text-xs font-bold text-gray-700 dark:text-gray-300">
                         Bonus XP (Reward Stage) <span class="text-rose-500">*</span>
                     </label>
+
                     <div class="relative">
-                        <input type="number" 
-                            name="xp_reward" 
-                            id="xp_reward" 
+                        <input type="number"
+                            name="xp_reward"
+                            id="xp_reward"
                             value="{{ old('xp_reward', $tahapan->xp_reward) }}"
                             step="50"
                             min="0"
-                            required
                             class="w-full pl-4 pr-12 py-3 rounded-2xl bg-gray-50 dark:bg-cyberdark-800 border border-gray-200 dark:border-pink-950/30 text-xs text-gray-800 dark:text-white focus:outline-none focus:border-indigo-500 transition">
-                        <span class="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-black text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-md">XP</span>
+
+                        <span class="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-black text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-md">
+                            XP
+                        </span>
                     </div>
+
+                    <p class="text-[10px] text-gray-500 dark:text-gray-400">
+                        Untuk Pre-Test dan Post-Test, EXP dihitung otomatis berdasarkan total EXP dari seluruh soal pada Ruang Ujian yang dipilih.
+                    </p>
+
                     @error('xp_reward')
                         <p class="text-[10px] text-rose-500 font-bold mt-1">{{ $message }}</p>
                     @enderror
@@ -243,4 +252,32 @@
         </form>
     </div>
 </div>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const tipeSelect = document.getElementById('tipe');
+    const xpRewardWrapper = document.getElementById('xpRewardWrapper');
+    const xpRewardInput = document.getElementById('xp_reward');
+
+    function toggleXpReward() {
+        if (!tipeSelect || !xpRewardWrapper || !xpRewardInput) return;
+
+        const tipeUjian = ['pre_test', 'post_test'].includes(tipeSelect.value);
+
+        if (tipeUjian) {
+            xpRewardWrapper.classList.add('hidden');
+            xpRewardInput.disabled = true;
+            xpRewardInput.required = false;
+        } else {
+            xpRewardWrapper.classList.remove('hidden');
+            xpRewardInput.disabled = false;
+            xpRewardInput.required = true;
+        }
+    }
+
+    tipeSelect.addEventListener('change', toggleXpReward);
+
+    // Menyesuaikan tampilan berdasarkan tipe tahapan saat edit dibuka
+    toggleXpReward();
+});
+</script>
 @endsection
