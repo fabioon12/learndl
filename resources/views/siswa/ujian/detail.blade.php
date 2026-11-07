@@ -8,6 +8,11 @@
 @php
     $hasilSaya = $hasilSaya ?? null;
 
+    // Konteks asal halaman: diisi dari controller atau query string.
+    $ruangBelajarId = $ruangBelajarId ?? request()->query('ruang_belajar_id');
+    $tahapanId = $tahapanId ?? request()->query('tahapan_id');
+    $dariRuangBelajar = filled($ruangBelajarId) && filled($tahapanId);
+
     $statusSiswa = $hasilSaya
         ? $hasilSaya->status
         : 'tersedia';
@@ -26,9 +31,11 @@
         {{-- BREADCRUMB --}}
         <div class="flex flex-wrap items-center gap-2 text-sm">
 
-            <a href="{{ route('siswa.ujian.index') }}"
+            <a href="{{ $dariRuangBelajar
+                    ? route('siswa.ruang-belajar.tahapan', ['id' => $ruangBelajarId])
+                    : route('siswa.ujian.index') }}"
                class="font-medium text-slate-500 transition hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400">
-                Ruang Ujian
+                {{ $dariRuangBelajar ? 'Ruang Belajar' : 'Ruang Ujian' }}
             </a>
 
             <i class="fa-solid fa-chevron-right text-xs text-slate-400"></i>
@@ -463,7 +470,14 @@
 
                                 </div>
 
-                                <form action="{{ route('siswa.ujian.mulai-mandiri', $ruangUjian->id) }}"
+                                <form action="{{ $dariRuangBelajar
+                                        ? route('siswa.ujian.ujian.mulai-tahapan', [
+                                            'ruang_ujian_id' => $ruangUjian->id,
+                                            'tahapan_id' => $tahapanId,
+                                        ])
+                                        : route('siswa.ujian.mulai-mandiri', [
+                                            'ruang_ujian_id' => $ruangUjian->id,
+                                        ]) }}"
                                       method="POST"
                                       onsubmit="return confirm('Apakah kamu sudah siap untuk memulai ujian ini?');">
 
@@ -510,11 +524,13 @@
                         @endif
 
 
-                        <a href="{{ route('siswa.ujian.index') }}"
+                        <a href="{{ $dariRuangBelajar
+                                ? route('siswa.ruang-belajar.tahapan', ['id' => $ruangBelajarId])
+                                : route('siswa.ujian.index') }}"
                            class="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 dark:border-cyberdark-700 dark:bg-cyberdark-800 dark:text-gray-300 dark:hover:bg-cyberdark-700">
 
                             <i class="fa-solid fa-arrow-left"></i>
-                            Kembali ke Daftar Ujian
+                            {{ $dariRuangBelajar ? 'Kembali ke Ruang Belajar' : 'Kembali ke Daftar Ujian' }}
 
                         </a>
 

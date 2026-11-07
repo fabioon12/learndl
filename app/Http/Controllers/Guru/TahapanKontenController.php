@@ -136,7 +136,6 @@ class TahapanKontenController extends Controller
                 'ruang_materi_id' => 'required|integer|exists:materis,id',
             ]);
 
-            // Pastikan materi merupakan milik Guru yang login.
             $materi = Materi::where('user_id', auth()->id())
                 ->findOrFail($validated['ruang_materi_id']);
 
@@ -145,13 +144,19 @@ class TahapanKontenController extends Controller
                     'ruang_materi_id' => $materi->id,
                     'ruang_ujian_id' => null,
                     'konten' => null,
+
+                    // XP berasal dari aktivitas/submateri,
+                    // bukan reward tambahan tahapan induk.
                     'xp_reward' => 0,
                 ]);
             });
 
             return redirect()
                 ->route('guru.ruang-belajar.tahapan.index', $ruangBelajar->id)
-                ->with('success', 'Ruang Materi berhasil dipasang pada tahapan pembelajaran.');
+                ->with(
+                    'success',
+                    'Ruang Materi berhasil dihubungkan. XP dari aktivitas materi akan dihitung sebagai bagian dari Ruang Belajar.'
+                );
         }
 
         // ==========================================
@@ -239,6 +244,68 @@ class TahapanKontenController extends Controller
 
             default:
                 abort(422, 'Tipe aktivitas tidak dikenali.');
+        }
+    }
+    public function uploadGambar(
+        Request $request,
+        $ruang_belajar_id,
+        $tahapan_id
+    ) {
+        $request->validate([
+            'gambar' => [
+                'required',
+                'image',
+                'mimes:jpg,jpeg,png,gif,webp',
+                'max:5120',
+            ],
+        ]);
+
+        $ruangBelajar = RuangBelajar::query()
+            ->whereKey($ruang_belajar_id)
+            ->where(function ($query) {
+                $query->where('user_id', auth()->id())
+                    ->orWhere('guru_id', auth()->id());
+            })
+            ->firstOrFail();
+
+        Tahapan::query()
+            ->where('ruang_belajar_id', $ruangBelajar->id)
+            ->where('tipe', 'apersepsi')
+            ->findOrFail($tahapan_id);
+
+        try {
+            $file = $request->file('gambar');
+
+            $path = $file->store(
+                'apersepsi-images',
+                'public'
+            );
+
+            if (!$path) {
+                throw new \RuntimeException(
+                    'File gagal disimpan ke storage.'
+                );
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Gambar berhasil diunggah.',
+                'url' => url(Storage::disk('public')->url($path)),
+            ]);
+
+        } catch (Throwable $e) {
+
+            Log::error('Upload gambar apersepsi gagal', [
+                'user_id' => auth()->id(),
+                'ruang_belajar_id' => $ruang_belajar_id,
+                'tahapan_id' => $tahapan_id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gambar gagal diunggah. Periksa log Laravel.',
+            ], 500);
         }
     }
 }

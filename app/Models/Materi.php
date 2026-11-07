@@ -24,7 +24,7 @@ class Materi extends Model
         return $this->belongsTo(User::class, 'user_id');
     }
 
-    public function subMateris()
+    public function submateris()
     {
         return $this->hasMany(Submateri::class, 'materi_id')->orderBy('urutan', 'asc');
     }

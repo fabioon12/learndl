@@ -28,14 +28,17 @@ class TahapanUser extends Model
 
     public function user()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(
+            User::class,
+            'user_id'
+        );
     }
+
     public function tahapan()
     {
-        return $this->belongsTo(Tahapan::class, 'tahapan_id');
-    }
-    public function userProgress()
-    {
-        return $this->hasMany(TahapanUser::class, 'tahapan_id');
+        return $this->belongsTo(
+            Tahapan::class,
+            'tahapan_id'
+        );
     }
 }

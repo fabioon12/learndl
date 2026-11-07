@@ -50,6 +50,7 @@
         }
         .animate-float { animation: floatSlow 6s ease-in-out infinite; }
     </style>
+    @stack('styles')
 </head>
 <body class="bg-gray-50 dark:bg-cyberdark-950 text-gray-800 dark:text-pink-50 font-sans overflow-hidden">
 

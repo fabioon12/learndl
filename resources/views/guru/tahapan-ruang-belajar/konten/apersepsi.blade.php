@@ -35,6 +35,11 @@
         data_get($konten, 'forum.batas_jawaban', 1)
     );
 
+    $uploadUrl = route('guru.ruang-belajar.tahapan.upload-gambar', [
+        $ruangBelajar->id,
+        $tahapan->id
+    ]);
+
     $formAction = $isEdit
         ? route('guru.ruang-belajar.tahapan.konten.update', [
             $ruangBelajar->id,
@@ -89,6 +94,47 @@
         margin-bottom: 12px;
     }
 
+    trix-editor ul {
+        list-style-type: disc;
+        padding-left: 28px;
+        margin: 12px 0;
+    }
+
+    trix-editor ol {
+        list-style-type: decimal;
+        padding-left: 28px;
+        margin: 12px 0;
+    }
+
+    trix-editor li {
+        display: list-item;
+        padding-left: 4px;
+        margin-bottom: 6px;
+        line-height: 1.8;
+    }
+
+    trix-editor ul ul {
+        list-style-type: circle;
+        margin-top: 6px;
+    }
+
+    trix-editor ul ul ul {
+        list-style-type: square;
+    }
+
+    trix-editor ol ol {
+        list-style-type: lower-alpha;
+        margin-top: 6px;
+    }
+
+    trix-editor ol ol ol {
+        list-style-type: lower-roman;
+    }
+
+    trix-editor li p {
+        margin: 0;
+    }
+
     trix-editor img {
         max-width: 100%;
         border-radius: 12px;
@@ -126,11 +172,6 @@
         background: #6d28d9;
     }
 
-    .forum-disabled {
-        opacity: .45;
-        pointer-events: none;
-    }
-
     .choice-preview {
         transition: all .2s ease;
     }
@@ -161,13 +202,6 @@
 
         </div>
 
-        <a href="{{ route('guru.ruang-belajar.tahapan.konten.edit', [
-            $ruangBelajar->id,
-            $tahapan->id
-        ]) }}"
-           class="hidden">
-        </a>
-
         <a href="{{ url()->previous() }}"
            class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm font-semibold transition">
 
@@ -177,6 +211,7 @@
         </a>
 
     </div>
+
 
     {{-- INFORMASI TAHAPAN --}}
     <div class="bg-white dark:bg-cyberdark-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-5">
@@ -220,6 +255,7 @@
 
     </div>
 
+
     {{-- VALIDATION ERROR --}}
     @if ($errors->any())
 
@@ -240,13 +276,20 @@
 
     @endif
 
-    <form action="{{ $formAction }}" method="POST" id="apersepsiForm">
+
+    <form
+        action="{{ $formAction }}"
+        method="POST"
+        id="apersepsiForm"
+        novalidate
+    >
 
         @csrf
 
         @if($isEdit)
             @method('PUT')
         @endif
+
 
         {{-- ========================================= --}}
         {{-- BAGIAN 1: MATERI APERSEPSI --}}
@@ -283,7 +326,7 @@
                     <i class="fa-solid fa-circle-info text-blue-500 mt-0.5"></i>
 
                     <p class="text-xs text-blue-700 dark:text-blue-300 leading-relaxed">
-                        Gunakan editor di bawah ini untuk membuat materi apersepsi. Guru dapat menyusun teks, memberikan penekanan informasi, menambahkan daftar, tautan, dan konten pendukung lainnya.
+                        Gunakan editor di bawah ini untuk membuat materi apersepsi. Guru dapat menyusun teks, memberikan penekanan informasi, menambahkan daftar, tautan, gambar, dan konten pendukung lainnya.
                     </p>
 
                 </div>
@@ -295,25 +338,37 @@
                         <span class="text-red-500">*</span>
                     </label>
 
-                    {{-- Hidden input untuk Trix --}}
+                    {{-- Hidden input materi --}}
                     <input
                         id="materiEditor"
                         type="hidden"
                         name="materi[isi]"
-                        value="{{ $materiIsi }}">
+                        value="{{ $materiIsi }}"
+                    >
 
-                    {{-- Trix Editor --}}
+                    {{-- Trix materi --}}
                     <trix-editor
+                        id="apersepsiTrix"
                         input="materiEditor"
-                        placeholder="Mulai tuliskan materi apersepsi di sini...">
+                        data-upload-url="{{ $uploadUrl }}"
+                        placeholder="Tuliskan materi apersepsi..."
+                    ></trix-editor>
 
-                    </trix-editor>
+                    <div id="materiUploadStatus"
+                         role="status"
+                         aria-live="polite"
+                         class="hidden mt-3 text-xs font-medium text-purple-600 dark:text-purple-300">
+
+                        <i class="fa-solid fa-cloud-arrow-up mr-1"></i>
+                        <span class="upload-status-text">Mengunggah gambar...</span>
+
+                    </div>
 
                     <div class="flex items-center justify-between gap-2 mt-3">
 
                         <p class="text-xs text-gray-400">
                             <i class="fa-solid fa-pen-to-square mr-1"></i>
-                            Gunakan toolbar untuk mengatur tampilan materi.
+                            Gunakan toolbar atau tarik gambar ke editor (JPG, PNG, GIF, WebP; maks. 5 MB).
                         </p>
 
                         <span class="text-xs text-gray-400">
@@ -358,13 +413,15 @@
 
                     </div>
 
+
                     {{-- TOGGLE FORUM --}}
                     <label class="relative inline-flex items-center cursor-pointer">
 
                         <input
                             type="hidden"
                             name="forum[aktif]"
-                            value="0">
+                            value="0"
+                        >
 
                         <input
                             type="checkbox"
@@ -372,7 +429,8 @@
                             value="1"
                             id="forumToggle"
                             class="sr-only peer"
-                            {{ $forumAktif ? 'checked' : '' }}>
+                            {{ $forumAktif ? 'checked' : '' }}
+                        >
 
                         <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:bg-purple-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-5"></div>
 
@@ -385,6 +443,7 @@
                 </div>
 
             </div>
+
 
             {{-- KONTEN FORUM --}}
             <div id="forumContent" class="p-5 space-y-5">
@@ -401,29 +460,52 @@
                         name="forum[judul]"
                         value="{{ $forumJudul }}"
                         placeholder="Contoh: Mari Berpikir Bersama!"
-                        class="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-cyberdark-900 text-gray-700 dark:text-gray-200 text-sm focus:ring-2 focus:ring-purple-500 outline-none">
+                        class="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-cyberdark-900 text-gray-700 dark:text-gray-200 text-sm focus:ring-2 focus:ring-purple-500 outline-none"
+                    >
 
                 </div>
+
 
                 {{-- PERTANYAAN PEMANTIK --}}
                 <div>
 
-                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">
                         Pertanyaan Pemantik
                         <span class="text-red-500">*</span>
                     </label>
 
-                    <textarea
+                    {{-- Hidden input pertanyaan forum --}}
+                    <input
+                        id="forumPertanyaanInput"
+                        type="hidden"
                         name="forum[pertanyaan]"
-                        rows="4"
-                        placeholder="Tuliskan pertanyaan yang akan dijawab oleh siswa..."
-                        class="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-cyberdark-900 text-gray-700 dark:text-gray-200 text-sm focus:ring-2 focus:ring-purple-500 outline-none resize-none">{{ $forumPertanyaan }}</textarea>
+                        value="{{ $forumPertanyaan }}"
+                    >
 
-                    <p class="text-xs text-gray-400 mt-2">
-                        Buat pertanyaan terbuka yang mendorong siswa menganalisis, memberikan alasan, dan menyampaikan pendapat.
+                    {{-- Trix pertanyaan forum --}}
+                    <trix-editor
+                        id="forumPertanyaanTrix"
+                        input="forumPertanyaanInput"
+                        data-upload-url="{{ $uploadUrl }}"
+                        placeholder="Tuliskan pertanyaan yang akan dijawab oleh siswa..."
+                    ></trix-editor>
+
+                    <div id="forumUploadStatus"
+                         role="status"
+                         aria-live="polite"
+                         class="hidden mt-3 text-xs font-medium text-purple-600 dark:text-purple-300">
+
+                        <i class="fa-solid fa-cloud-arrow-up mr-1"></i>
+                        <span class="upload-status-text">Mengunggah gambar...</span>
+
+                    </div>
+
+                    <p class="text-xs text-gray-400 mt-3">
+                        Buat pertanyaan terbuka yang mendorong siswa menganalisis, memberikan alasan, dan menyampaikan pendapat. Anda juga dapat menambahkan gambar sebagai pendukung pertanyaan.
                     </p>
 
                 </div>
+
 
                 {{-- BATAS JAWABAN --}}
                 <div class="max-w-sm">
@@ -438,13 +520,15 @@
                         value="{{ $batasJawaban }}"
                         min="1"
                         max="10"
-                        class="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-cyberdark-900 text-gray-700 dark:text-gray-200 text-sm focus:ring-2 focus:ring-purple-500 outline-none">
+                        class="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-cyberdark-900 text-gray-700 dark:text-gray-200 text-sm focus:ring-2 focus:ring-purple-500 outline-none"
+                    >
 
                     <p class="text-xs text-gray-400 mt-2">
                         Tentukan berapa kali siswa dapat mengirimkan jawaban.
                     </p>
 
                 </div>
+
 
                 {{-- PREVIEW PERTANYAAN --}}
                 <div class="p-4 bg-purple-50 dark:bg-purple-950/20 border border-purple-100 dark:border-purple-900/40 rounded-xl">
@@ -465,8 +549,12 @@
                             {{ $forumJudul }}
                         </p>
 
-                        <p id="previewPertanyaan" class="text-sm text-gray-600 dark:text-gray-300 mt-2 leading-relaxed whitespace-pre-line">
-                            {{ $forumPertanyaan ?: 'Pertanyaan pemantik akan ditampilkan di sini.' }}
+                        {{-- Preview menggunakan teks biasa untuk menghindari HTML tidak tepercaya --}}
+                        <p id="previewPertanyaan"
+                           class="text-sm text-gray-600 dark:text-gray-300 mt-2 leading-relaxed whitespace-pre-line">
+
+                            {{ trim(strip_tags($forumPertanyaan)) ?: 'Pertanyaan pemantik akan ditampilkan di sini.' }}
+
                         </p>
 
                         <div class="mt-4">
@@ -475,9 +563,8 @@
                                 disabled
                                 rows="2"
                                 placeholder="Tuliskan jawaban Anda di sini..."
-                                class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-cyberdark-800 text-sm resize-none">
-
-                            </textarea>
+                                class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-cyberdark-800 text-sm resize-none"
+                            ></textarea>
 
                             <div class="flex justify-end mt-2">
 
@@ -494,6 +581,7 @@
                 </div>
 
             </div>
+
 
             {{-- FORUM NONAKTIF --}}
             <div id="forumDisabled" class="hidden p-6 bg-gray-50 dark:bg-cyberdark-900/50">
@@ -559,6 +647,7 @@
 
             <button
                 type="submit"
+                id="submitApersepsi"
                 class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white text-sm font-bold shadow-lg shadow-purple-500/20 transition">
 
                 <i class="fa-solid fa-floppy-disk"></i>
@@ -576,12 +665,47 @@
 </div>
 
 
-{{-- JAVASCRIPT --}}
+{{-- ========================================= --}}
+{{-- JAVASCRIPT: FORM DAN PREVIEW --}}
+{{-- ========================================= --}}
+
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+
+    const form = document.getElementById('apersepsiForm');
+
     const forumToggle = document.getElementById('forumToggle');
     const forumContent = document.getElementById('forumContent');
     const forumDisabled = document.getElementById('forumDisabled');
+
+    const materiEditor = document.getElementById('apersepsiTrix');
+    const materiInput = document.getElementById('materiEditor');
+
+    const forumEditor = document.getElementById('forumPertanyaanTrix');
+    const forumInput = document.getElementById('forumPertanyaanInput');
+
+    const judulInput = document.querySelector('[name="forum[judul]"]');
+
+    const previewJudul = document.getElementById('previewJudul');
+    const previewPertanyaan = document.getElementById('previewPertanyaan');
+
+    const submitButton = document.getElementById('submitApersepsi');
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | 1. STATUS UPLOAD
+    |--------------------------------------------------------------------------
+    */
+
+    window.apersepsiUploadsPending = 0;
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | 2. TOGGLE FORUM
+    |--------------------------------------------------------------------------
+    */
 
     function toggleForum() {
 
@@ -590,52 +714,504 @@ document.addEventListener('DOMContentLoaded', function () {
         forumContent.classList.toggle('hidden', !aktif);
         forumDisabled.classList.toggle('hidden', aktif);
 
-        forumContent.querySelectorAll('input, textarea').forEach(element => {
+        // Hanya menonaktifkan input milik form forum.
+        // Jangan menonaktifkan input internal toolbar Trix seperti name="href".
+        forumContent.querySelectorAll(
+            'input[name^="forum["], textarea[name^="forum["], select[name^="forum["]'
+        ).forEach(element => {
             element.disabled = !aktif;
         });
+
+        // Editor Trix harus dikunci secara terpisah.
+        forumEditor.setAttribute(
+            'contenteditable',
+            aktif ? 'true' : 'false'
+        );
+
+        forumEditor.style.pointerEvents = aktif ? '' : 'none';
     }
 
     forumToggle.addEventListener('change', toggleForum);
 
     toggleForum();
 
-    const judulInput = document.querySelector('[name="forum[judul]"]');
-    const pertanyaanInput = document.querySelector('[name="forum[pertanyaan]"]');
 
-    const previewJudul = document.getElementById('previewJudul');
-    const previewPertanyaan = document.getElementById('previewPertanyaan');
+    /*
+    |--------------------------------------------------------------------------
+    | 3. PREVIEW JUDUL
+    |--------------------------------------------------------------------------
+    */
 
     judulInput.addEventListener('input', function () {
-        previewJudul.textContent = this.value || 'Judul Diskusi';
+
+        previewJudul.textContent =
+            this.value.trim() || 'Judul Diskusi';
+
     });
 
-    pertanyaanInput.addEventListener('input', function () {
-        previewPertanyaan.textContent = this.value || 'Pertanyaan pemantik akan ditampilkan di sini.';
-    });
 
+    /*
+    |--------------------------------------------------------------------------
+    | 4. PREVIEW PERTANYAAN TRIX
+    |--------------------------------------------------------------------------
+    */
 
-    const form = document.getElementById('apersepsiForm');
-    const editor = document.querySelector('trix-editor');
+    function updatePreviewPertanyaan() {
 
-    form.addEventListener('submit', function (e) {
-
-        const isi = editor.editor.getDocument().toString().trim();
-
-        if (!isi) {
-            e.preventDefault();
-            alert('Silakan isi materi apersepsi terlebih dahulu.');
-            editor.focus();
+        if (!forumEditor.editor) {
             return;
         }
 
-        if (forumToggle.checked && !pertanyaanInput.value.trim()) {
+        const teks = forumEditor.editor
+            .getDocument()
+            .toString()
+            .trim();
+
+        const memilikiGambar = /<img\b/i.test(forumInput.value);
+
+        if (teks) {
+
+            previewPertanyaan.textContent = teks;
+
+        } else if (memilikiGambar) {
+
+            previewPertanyaan.textContent = 'Gambar pertanyaan terlampir.';
+
+        } else {
+
+            previewPertanyaan.textContent =
+                'Pertanyaan pemantik akan ditampilkan di sini.';
+
+        }
+    }
+
+    forumEditor.addEventListener('trix-change', updatePreviewPertanyaan);
+
+    forumEditor.addEventListener('trix-initialize', updatePreviewPertanyaan);
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | 5. CEK KONTEN TRIX
+    |--------------------------------------------------------------------------
+    */
+
+    function hasTrixContent(editor, hiddenInput) {
+
+        const teks = editor.editor
+            ? editor.editor.getDocument().toString().trim()
+            : '';
+
+        const memilikiGambar = /<img\b/i.test(hiddenInput.value);
+
+        return teks.length > 0 || memilikiGambar;
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | 6. SUBMIT FORM
+    |--------------------------------------------------------------------------
+    */
+
+    form.addEventListener('submit', function (e) {
+
+        // Cegah submit ketika gambar masih diunggah.
+        if (window.apersepsiUploadsPending > 0) {
+
+            e.preventDefault();
+
+            alert('Tunggu sampai semua gambar selesai diunggah.');
+
+            return;
+        }
+
+
+        // Validasi materi apersepsi.
+        if (!hasTrixContent(materiEditor, materiInput)) {
+
+            e.preventDefault();
+
+            alert('Silakan isi materi apersepsi terlebih dahulu.');
+
+            materiEditor.focus();
+
+            return;
+        }
+
+
+        // Validasi pertanyaan jika forum aktif.
+        if (
+            forumToggle.checked &&
+            !hasTrixContent(forumEditor, forumInput)
+        ) {
+
             e.preventDefault();
 
             alert('Silakan isi pertanyaan pemantik forum diskusi.');
-            pertanyaanInput.focus();
+
+            forumEditor.focus();
+
+            return;
         }
 
+
+        // Cegah klik submit berulang.
+        submitButton.disabled = true;
+
+        submitButton.classList.add('opacity-70', 'cursor-not-allowed');
+
+        submitButton.innerHTML = `
+            <i class="fa-solid fa-spinner fa-spin"></i>
+            Menyimpan...
+        `;
+
     });
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | 7. STATUS UPLOAD UNTUK MASING-MASING EDITOR
+    |--------------------------------------------------------------------------
+    */
+
+    function updateUploadStatus(editor, message, visible) {
+
+        const statusId = editor.id === 'apersepsiTrix'
+            ? 'materiUploadStatus'
+            : 'forumUploadStatus';
+
+        const status = document.getElementById(statusId);
+
+        if (!status) {
+            return;
+        }
+
+        const text = status.querySelector('.upload-status-text');
+
+        if (text) {
+            text.textContent = message;
+        }
+
+        status.classList.toggle('hidden', !visible);
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | 8. INISIALISASI EDITOR FORUM
+    |--------------------------------------------------------------------------
+    */
+
+    forumEditor.addEventListener('trix-initialize', function () {
+
+        forumEditor.setAttribute(
+            'contenteditable',
+            forumToggle.checked ? 'true' : 'false'
+        );
+
+        updatePreviewPertanyaan();
+
+    });
+
+});
+</script>
+
+
+{{-- ========================================= --}}
+{{-- JAVASCRIPT: UPLOAD GAMBAR KEDUA TRIX --}}
+{{-- ========================================= --}}
+
+<script>
+document.addEventListener('trix-attachment-add', function (event) {
+
+    const editor = event.target;
+    const attachment = event.attachment;
+
+    /*
+    |--------------------------------------------------------------------------
+    | HANYA PROSES DUA EDITOR APERSEPSI
+    |--------------------------------------------------------------------------
+    */
+
+    const editorDiizinkan = [
+        'apersepsiTrix',
+        'forumPertanyaanTrix'
+    ];
+
+    if (!editorDiizinkan.includes(editor.id)) {
+        return;
+    }
+
+    if (!attachment.file) {
+        return;
+    }
+
+
+    const file = attachment.file;
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | VALIDASI FILE
+    |--------------------------------------------------------------------------
+    */
+
+    if (!file.type.startsWith('image/')) {
+
+        alert('Hanya file gambar yang diperbolehkan.');
+
+        attachment.remove();
+
+        return;
+    }
+
+
+    if (file.size > 5 * 1024 * 1024) {
+
+        alert('Ukuran gambar maksimal 5 MB.');
+
+        attachment.remove();
+
+        return;
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | CEK URL UPLOAD
+    |--------------------------------------------------------------------------
+    */
+
+    const uploadUrl = editor.dataset.uploadUrl;
+
+    if (!uploadUrl) {
+
+        alert('URL upload gambar tidak ditemukan.');
+
+        attachment.remove();
+
+        return;
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | CEK CSRF TOKEN
+    |--------------------------------------------------------------------------
+    */
+
+    const csrfToken = document.querySelector(
+        'meta[name="csrf-token"]'
+    )?.content || document.querySelector(
+        'input[name="_token"]'
+    )?.value;
+
+    if (!csrfToken) {
+
+        alert('Token CSRF tidak ditemukan.');
+
+        attachment.remove();
+
+        return;
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | PERSIAPAN UPLOAD
+    |--------------------------------------------------------------------------
+    */
+
+    const formData = new FormData();
+
+    formData.append('gambar', file);
+
+    const xhr = new XMLHttpRequest();
+
+    let uploadSelesai = false;
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | COUNTER UPLOAD
+    |--------------------------------------------------------------------------
+    */
+
+    window.apersepsiUploadsPending =
+        (window.apersepsiUploadsPending || 0) + 1;
+
+
+    function selesaiUpload() {
+
+        if (uploadSelesai) {
+            return;
+        }
+
+        uploadSelesai = true;
+
+        window.apersepsiUploadsPending = Math.max(
+            0,
+            window.apersepsiUploadsPending - 1
+        );
+
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | STATUS UPLOAD
+    |--------------------------------------------------------------------------
+    */
+
+    const statusId = editor.id === 'apersepsiTrix'
+        ? 'materiUploadStatus'
+        : 'forumUploadStatus';
+
+    const status = document.getElementById(statusId);
+
+    function setStatus(message, visible) {
+
+        if (!status) {
+            return;
+        }
+
+        const text = status.querySelector('.upload-status-text');
+
+        if (text) {
+            text.textContent = message;
+        }
+
+        status.classList.toggle('hidden', !visible);
+
+    }
+
+    setStatus('Mengunggah gambar...', true);
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | KIRIM REQUEST
+    |--------------------------------------------------------------------------
+    */
+
+    xhr.open('POST', uploadUrl, true);
+
+    xhr.responseType = 'json';
+
+    xhr.setRequestHeader('X-CSRF-TOKEN', csrfToken);
+
+    xhr.setRequestHeader('Accept', 'application/json');
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | PROGRESS UPLOAD
+    |--------------------------------------------------------------------------
+    */
+
+    xhr.upload.onprogress = function (event) {
+
+        if (event.lengthComputable) {
+
+            const progress = Math.round(
+                (event.loaded / event.total) * 100
+            );
+
+            attachment.setUploadProgress(progress);
+
+            setStatus(
+                'Mengunggah gambar... ' + progress + '%',
+                true
+            );
+
+        }
+
+    };
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | UPLOAD BERHASIL / GAGAL
+    |--------------------------------------------------------------------------
+    */
+
+    xhr.onload = function () {
+
+        const response = xhr.response;
+
+        console.log('Editor:', editor.id);
+        console.log('Status upload:', xhr.status);
+        console.log('Respons upload:', response);
+
+
+        if (
+            xhr.status >= 200 &&
+            xhr.status < 300 &&
+            response?.success &&
+            response?.url
+        ) {
+
+            attachment.setAttributes({
+                url: response.url,
+                href: response.url
+            });
+
+            attachment.setUploadProgress(100);
+
+            setStatus('Gambar berhasil diunggah.', true);
+
+            selesaiUpload();
+
+            // Sembunyikan status setelah beberapa saat.
+            setTimeout(function () {
+                setStatus('', false);
+            }, 2000);
+
+        } else {
+
+            alert(
+                response?.message ||
+                'Upload gambar gagal. HTTP ' + xhr.status
+            );
+
+            attachment.remove();
+
+            setStatus('Upload gambar gagal.', true);
+
+            selesaiUpload();
+
+        }
+
+    };
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | ERROR KONEKSI
+    |--------------------------------------------------------------------------
+    */
+
+    xhr.onerror = function () {
+
+        alert('Gagal menghubungi server saat mengunggah gambar.');
+
+        attachment.remove();
+
+        setStatus('Gagal mengunggah gambar.', true);
+
+        selesaiUpload();
+
+    };
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | REQUEST DIKIRIM
+    |--------------------------------------------------------------------------
+    */
+
+    xhr.send(formData);
 
 });
 </script>

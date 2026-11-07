@@ -112,6 +112,21 @@ class User extends Authenticatable
             'id'
         );
     }
+    public function ruangBelajarDibuat()
+    {
+        return $this->hasMany(
+            RuangBelajar::class,
+            'user_id'
+        );
+    }
+
+    public function ruangBelajarDiajar()
+    {
+        return $this->hasMany(
+            RuangBelajar::class,
+            'guru_id'
+        );
+    }
 
 /**
  * Menghitung total EXP global siswa.

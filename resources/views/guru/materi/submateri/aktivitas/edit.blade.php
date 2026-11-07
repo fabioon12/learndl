@@ -182,7 +182,11 @@
                             @include('guru.materi.submateri.aktivitas.partials.block-latihan')
                         </div>
                     </template>
-
+                    <template x-if="block.tipe === 'coding_project'">
+                        <div>
+                            @include('guru.materi.submateri.aktivitas.partials.block-coding-project')
+                        </div>
+                    </template>
                 </div>
             </template>
         </div>

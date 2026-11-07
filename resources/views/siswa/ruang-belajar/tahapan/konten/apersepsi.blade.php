@@ -1,238 +1,685 @@
 
 @extends('siswa.layouts.app')
 
-@section('title', 'Aktivitas Apersepsi')
+@section('title', 'Apersepsi Interaktif')
 
 @php
-    /*
-    |--------------------------------------------------------------------------
-    | Mengambil data dari konfigurasi guru
-    |--------------------------------------------------------------------------
-    */
-
     $materi = $konten['materi'] ?? [];
     $forum = $konten['forum'] ?? [];
 
-    // Isi materi apersepsi
-    $isiMateri = $materi['isi'] ?? '';
+    $isiMateri = (string) ($materi['isi'] ?? '');
 
-    // Konfigurasi forum
+    $materiTersedia = trim(strip_tags($isiMateri)) !== ''
+        || preg_match('/<(img|video|audio|iframe|figure|svg)\b/i', $isiMateri) === 1;
+
+    /*
+    |--------------------------------------------------------------------------
+    | NORMALISASI URL STORAGE
+    |--------------------------------------------------------------------------
+    | Mengubah URL localhost yang tersimpan di HTML menjadi URL aplikasi.
+    */
+
+    $normalisasiUrlTrix = function ($html) {
+        return preg_replace_callback(
+            '~https?://(?:localhost|127\.0\.0\.1)(?::\d+)?/storage/([A-Za-z0-9/_\-.%]+)~i',
+            fn ($match) => asset('storage/' . $match[1]),
+            (string) $html
+        );
+    };
+
+    $isiMateri = $normalisasiUrlTrix($isiMateri);
+
     $forumAktif = filter_var(
         $forum['aktif'] ?? false,
         FILTER_VALIDATE_BOOLEAN
     );
 
     $judulForum = $forum['judul'] ?? 'Forum Diskusi Apersepsi';
-    $pertanyaanForum = $forum['pertanyaan'] ?? '';
+
+    // Pertanyaan forum berupa HTML dari Trix.
+    $pertanyaanForum = $normalisasiUrlTrix(
+        $forum['pertanyaan'] ?? ''
+    );
+
     $batasJawaban = $forum['batas_jawaban'] ?? null;
 
-    // Jawaban siswa sebelumnya jika validasi gagal
-    $jawabanSebelumnya = old('jawaban.forum', '');
+    $jawabanSaya = $jawabanSaya ?? null;
+
+    $sudahMenjawab = $forumAktif && filled($jawabanSaya);
+
+    $jawabanTeman = $jawabanTeman ?? collect();
+
+    $jumlahJawaban = $jumlahJawaban
+        ?? ($jawabanTeman->count() + ($sudahMenjawab ? 1 : 0));
+
+    /*
+    |--------------------------------------------------------------------------
+    | JAWABAN SISWA
+    |--------------------------------------------------------------------------
+    */
+
+    $jawabanSebelumnya = old(
+        'jawaban.forum',
+        $jawabanSaya ?? ''
+    );
+
+    // Normalisasi URL gambar jawaban sendiri.
+    $jawabanSayaHtml = $normalisasiUrlTrix(
+        is_string($jawabanSaya) ? $jawabanSaya : ''
+    );
+
+    $langkahAwal = $forumAktif && $sudahMenjawab ? 3 : 1;
+
+    $jumlahLangkah = $forumAktif ? 3 : 1;
+
+    $editorId = 'jawaban-forum-editor';
 @endphp
 
+
+{{-- =========================================================
+     STYLES
+========================================================= --}}
+
 @push('styles')
+
+<link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/trix@2.1.15/dist/trix.css"
+>
+
 <style>
-    .apersepsi-card {
-        transition: all .25s ease;
+
+    /*
+    |--------------------------------------------------------------------------
+    | GENERAL
+    |--------------------------------------------------------------------------
+    */
+
+    .ap-gradient {
+        background: linear-gradient(125deg,#4338ca,#6366f1 55%,#8b5cf6);
     }
 
-    .apersepsi-card:focus-within {
-        border-color: #818cf8;
-        box-shadow: 0 0 0 3px rgba(129,140,248,.10);
+    .ap-panel {
+        background:#fff;
+        border:1px solid #e5e7eb;
+        border-radius:1.5rem;
+        overflow:hidden;
     }
 
-    .apersepsi-gradient {
-        background: linear-gradient(
-            135deg,
-            #4f46e5 0%,
-            #6366f1 50%,
-            #8b5cf6 100%
-        );
+    .dark .ap-panel {
+        background:#111827;
+        border-color:#374151;
     }
 
-    .answer-area {
-        min-height: 180px;
-        resize: vertical;
+    .ap-step {
+        display:flex;
+        align-items:center;
+        gap:.65rem;
+        padding:.85rem 1rem;
+        border-radius:1rem;
+        color:#6b7280;
+        font-size:.8rem;
+        font-weight:800;
     }
 
-    .materi-content img {
-        max-width: 100%;
-        height: auto;
-        border-radius: 12px;
-        margin-top: 12px;
-        margin-bottom: 12px;
+    .ap-step-number {
+        width:2rem;
+        height:2rem;
+        flex-shrink:0;
+        display:grid;
+        place-items:center;
+        border-radius:.7rem;
+        background:#e5e7eb;
+        color:#6b7280;
     }
 
-    .materi-content iframe {
-        max-width: 100%;
+    .ap-step.is-current {
+        background:#eef2ff;
+        color:#4338ca;
     }
 
-    .materi-content table {
-        width: 100%;
-        border-collapse: collapse;
-        margin: 16px 0;
+    .ap-step.is-current .ap-step-number {
+        background:#4f46e5;
+        color:white;
     }
 
-    .materi-content table td,
-    .materi-content table th {
-        border: 1px solid #e5e7eb;
-        padding: 10px;
+    .ap-step.is-done {
+        color:#059669;
     }
+
+    .ap-step.is-done .ap-step-number {
+        background:#d1fae5;
+        color:#047857;
+    }
+
+    .dark .ap-step.is-current {
+        background:rgba(99,102,241,.15);
+        color:#a5b4fc;
+    }
+
+    .dark .ap-step-number {
+        background:#374151;
+        color:#d1d5db;
+    }
+
+    .dark .ap-step.is-done .ap-step-number {
+        background:rgba(16,185,129,.2);
+        color:#6ee7b7;
+    }
+
+    .ap-btn {
+        display:inline-flex;
+        justify-content:center;
+        align-items:center;
+        gap:.6rem;
+        border-radius:1rem;
+        padding:.95rem 1.4rem;
+        font-size:.82rem;
+        font-weight:800;
+        transition:transform .15s,filter .15s;
+    }
+
+    .ap-btn:hover {
+        transform:translateY(-2px);
+        filter:brightness(1.06);
+    }
+
+    .ap-btn-primary {
+        color:#fff;
+        background:linear-gradient(90deg,#4f46e5,#7c3aed);
+    }
+
+    .ap-btn-secondary {
+        color:#4338ca;
+        background:#eef2ff;
+    }
+
+    .dark .ap-btn-secondary {
+        background:#312e81;
+        color:#c7d2fe;
+    }
+
+    .ap-material {
+        overflow-wrap:anywhere;
+        line-height:1.85;
+    }
+
+    .ap-material figure,
+    .ap-material .attachment {
+        max-width:100%;
+        margin:1.2rem auto;
+    }
+
+    .ap-material img {
+        display:block;
+        max-width:100%;
+        height:auto;
+        border-radius:1rem;
+        margin:1rem 0;
+    }
+
+    .ap-material figure a {
+        max-width:100%;
+        display:inline-block;
+    }
+
+    .ap-material .attachment__caption {
+        font-size:.75rem;
+        color:#9ca3af;
+    }
+
+    .ap-material iframe,
+    .ap-material video {
+        max-width:100%;
+    }
+
+    .ap-material table {
+        width:100%;
+        border-collapse:collapse;
+    }
+
+    .ap-material td,
+    .ap-material th {
+        border:1px solid #d1d5db;
+        padding:.65rem;
+    }
+
+    .ap-material h1,
+    .ap-material h2,
+    .ap-material h3 {
+        font-weight:800;
+        line-height:1.35;
+        margin:1rem 0 .5rem;
+    }
+
+    .ap-material h1 {
+        font-size:1.6rem;
+    }
+
+    .ap-material h2 {
+        font-size:1.3rem;
+    }
+
+    .ap-material ul {
+        list-style:disc;
+        padding-left:1.5rem;
+    }
+
+    .ap-material ol {
+        list-style:decimal;
+        padding-left:1.5rem;
+    }
+
+    [data-ap-screen][hidden] {
+        display:none !important;
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | TRIX EDITOR SISWA
+    |--------------------------------------------------------------------------
+    */
+
+    .ap-editor-wrapper {
+        overflow:hidden;
+        border:1px solid #e5e7eb;
+        border-radius:1.25rem;
+        background:#fff;
+    }
+
+    .ap-editor-wrapper:focus-within {
+        border-color:#818cf8;
+        box-shadow:0 0 0 3px rgba(99,102,241,.15);
+    }
+
+    .ap-editor-wrapper trix-toolbar {
+        padding:.75rem;
+        background:#f9fafb;
+        border-bottom:1px solid #e5e7eb;
+    }
+
+    .ap-editor-wrapper trix-toolbar .trix-button-group {
+        margin-bottom:.25rem;
+    }
+
+    .ap-editor-wrapper trix-toolbar .trix-button {
+        background:#fff;
+    }
+
+    .ap-editor-wrapper trix-toolbar .trix-button--icon {
+        width:2.2rem;
+        height:2.2rem;
+    }
+
+    .ap-trix-editor {
+        display:block;
+        min-height:250px;
+        max-height:600px;
+        overflow-y:auto;
+        padding:1.25rem;
+        color:#1f2937;
+        background:#fff;
+        font-size:14px;
+        line-height:1.8;
+        outline:none;
+        overflow-wrap:anywhere;
+    }
+
+    .ap-trix-editor:focus {
+        outline:none;
+    }
+
+    .ap-trix-editor h1 {
+        font-size:1.5rem;
+        font-weight:800;
+        line-height:1.5;
+        margin-bottom:.75rem;
+        color:#111827;
+    }
+
+    .ap-trix-editor p {
+        margin-bottom:.65rem;
+    }
+
+    .ap-trix-editor ul {
+        list-style:disc;
+        padding-left:1.5rem;
+    }
+
+    .ap-trix-editor ol {
+        list-style:decimal;
+        padding-left:1.5rem;
+    }
+
+    .ap-trix-editor li {
+        margin-bottom:.35rem;
+    }
+
+    .ap-trix-editor blockquote {
+        margin:1rem 0;
+        border-left:4px solid #6366f1;
+        padding-left:1rem;
+        color:#4b5563;
+    }
+
+    .ap-trix-editor a {
+        color:#2563eb;
+        text-decoration:underline;
+    }
+
+    .ap-trix-editor pre {
+        overflow-x:auto;
+        margin:1rem 0;
+        padding:1rem;
+        border-radius:.5rem;
+        background:#1f2937;
+        color:#86efac;
+        font-family:monospace;
+    }
+
+    .ap-trix-editor img {
+        max-width:100%;
+        height:auto;
+    }
+
+    .ap-trix-editor figure {
+        margin:1rem 0;
+    }
+
+    .ap-trix-editor > :last-child {
+        margin-bottom:0;
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | TRIX CONTENT DISPLAY
+    |--------------------------------------------------------------------------
+    | Digunakan untuk menampilkan HTML Trix dari guru dan siswa.
+    */
+
+    .ap-trix-content {
+        overflow-wrap:anywhere;
+        word-break:break-word;
+        line-height:1.85;
+        font-size:.9rem;
+    }
+
+    .ap-trix-content p {
+        margin-bottom:.75rem;
+    }
+
+    .ap-trix-content p:last-child {
+        margin-bottom:0;
+    }
+
+    .ap-trix-content strong {
+        font-weight:800;
+    }
+
+    .ap-trix-content em {
+        font-style:italic;
+    }
+
+    .ap-trix-content ul {
+        list-style:disc;
+        padding-left:1.5rem;
+        margin:.75rem 0;
+    }
+
+    .ap-trix-content ol {
+        list-style:decimal;
+        padding-left:1.5rem;
+        margin:.75rem 0;
+    }
+
+    .ap-trix-content li {
+        display:list-item;
+        margin-bottom:.35rem;
+        padding-left:.25rem;
+    }
+
+    .ap-trix-content a {
+        color:#6366f1;
+        text-decoration:underline;
+        overflow-wrap:anywhere;
+    }
+
+    .ap-trix-content blockquote {
+        border-left:4px solid #818cf8;
+        padding-left:1rem;
+        margin:1rem 0;
+        color:#6b7280;
+    }
+
+    .ap-trix-content h1 {
+        font-size:1.5rem;
+        font-weight:800;
+        margin:1rem 0 .75rem;
+    }
+
+    .ap-trix-content figure {
+        margin:1rem 0;
+        max-width:100%;
+    }
+
+    .ap-trix-content img {
+        display:block;
+        max-width:100%;
+        height:auto;
+        border-radius:.85rem;
+        margin:.75rem 0;
+    }
+
+    .ap-trix-content .attachment {
+        max-width:100%;
+        margin:1rem 0;
+    }
+
+    .ap-trix-content .attachment__caption {
+        font-size:.75rem;
+        color:#9ca3af;
+    }
+
+    .ap-trix-content pre {
+        overflow-x:auto;
+        white-space:pre-wrap;
+        padding:1rem;
+        background:#1f2937;
+        color:#86efac;
+        border-radius:.75rem;
+        margin:1rem 0;
+    }
+
+    .ap-trix-content table {
+        width:100%;
+        border-collapse:collapse;
+    }
+
+    .ap-trix-content th,
+    .ap-trix-content td {
+        border:1px solid #d1d5db;
+        padding:.65rem;
+    }
+
+    .ap-trix-content iframe,
+    .ap-trix-content video {
+        max-width:100%;
+    }
+
+    .dark .ap-trix-content {
+        color:#e5e7eb;
+    }
+
+    .dark .ap-trix-content blockquote {
+        color:#9ca3af;
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | RESPONSIVE
+    |--------------------------------------------------------------------------
+    */
+
+    @media(max-width:640px) {
+
+        .ap-step {
+            flex-direction:column;
+            text-align:center;
+            padding:.7rem .25rem;
+            font-size:.65rem;
+        }
+
+        .ap-trix-editor {
+            min-height:220px;
+        }
+
+        .ap-editor-wrapper trix-toolbar {
+            padding:.5rem;
+        }
+
+    }
+
 </style>
+
 @endpush
+
+
+{{-- =========================================================
+     CONTENT
+========================================================= --}}
 
 @section('content')
 
-<div class="max-w-5xl mx-auto space-y-6">
+<div
+    class="max-w-5xl mx-auto space-y-6"
+    id="apersepsiWizard"
+    data-start-step="{{ $langkahAwal }}"
+    data-forum-active="{{ $forumAktif ? '1' : '0' }}"
+    data-has-answer="{{ $sudahMenjawab ? '1' : '0' }}"
+>
 
     {{-- HEADER --}}
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+
+    <div class="flex flex-wrap items-center justify-between gap-3">
 
         <div class="flex items-center gap-3">
 
-            <div class="w-12 h-12 rounded-2xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-                <i class="fa-solid fa-lightbulb text-indigo-600 dark:text-indigo-400 text-xl"></i>
+            <div class="w-12 h-12 rounded-2xl bg-indigo-100 dark:bg-indigo-900/30 grid place-items-center">
+                <i class="fa-solid fa-lightbulb text-xl text-indigo-600 dark:text-indigo-400"></i>
             </div>
 
             <div>
-                <p class="text-[10px] font-bold uppercase tracking-[.2em] text-indigo-600 dark:text-indigo-400">
+                <p class="text-[10px] uppercase tracking-[.2em] font-black text-indigo-500">
                     Aktivitas Pembelajaran
                 </p>
 
-                <h1 class="text-xl sm:text-2xl font-black text-gray-900 dark:text-white">
-                    Apersepsi
+                <h1 class="text-2xl font-black text-gray-900 dark:text-white">
+                    Mari Berfikir
                 </h1>
             </div>
 
         </div>
 
-        <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 text-xs font-bold">
-            <i class="fa-solid fa-brain"></i>
+        <span class="rounded-full px-4 py-2 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-300 text-xs font-bold">
+            <i class="fa-solid fa-brain mr-2"></i>
             Aktifkan Pengetahuan Awal
         </span>
 
     </div>
 
 
-    {{-- INFORMASI RUANG BELAJAR --}}
-    <div class="bg-white dark:bg-cyberdark-900 rounded-3xl border border-gray-100 dark:border-gray-800 p-5 sm:p-6">
+    {{-- NOTIFIKASI --}}
 
-        <div class="flex items-center gap-3">
+    @if (session('success'))
 
-            <div class="w-10 h-10 shrink-0 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                <i class="fa-solid fa-book-open text-blue-600 dark:text-blue-400"></i>
-            </div>
-
-            <div class="min-w-0">
-
-                <p class="text-[10px] uppercase tracking-wider font-bold text-gray-400">
-                    Ruang Belajar
-                </p>
-
-                <h2 class="font-black text-gray-900 dark:text-white mt-1 truncate">
-                    {{ $ruangBelajar->judul ?? 'Ruang Belajar' }}
-                </h2>
-
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    {{ $tahapan->judul_tahapan }}
-                </p>
-
-            </div>
-
+        <div
+            role="status"
+            class="rounded-2xl bg-emerald-50 border border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-900 p-4 text-sm text-emerald-700 dark:text-emerald-300"
+        >
+            {{ session('success') }}
         </div>
 
-    </div>
+    @endif
+
+    @if (session('error') || $errors->any())
+
+        <div
+            role="alert"
+            class="rounded-2xl bg-red-50 border border-red-200 dark:bg-red-950/30 dark:border-red-900 p-4 text-sm text-red-700 dark:text-red-300"
+        >
+            {{ session('error') ?: $errors->first() }}
+        </div>
+
+    @endif
 
 
-    {{-- HERO APERSEPSI --}}
-    <div class="relative overflow-hidden rounded-[2rem] apersepsi-gradient p-6 sm:p-9">
+    {{-- BANNER APERSEPSI --}}
 
-        <div class="absolute -right-16 -top-16 w-64 h-64 rounded-full bg-white/10 blur-2xl"></div>
+    <div class="ap-gradient relative overflow-hidden rounded-[2rem] p-6 sm:p-8 text-white">
 
-        <div class="absolute -left-12 -bottom-20 w-56 h-56 rounded-full bg-purple-300/20 blur-2xl"></div>
+        <div class="absolute -top-16 -right-12 w-56 h-56 rounded-full bg-white/10 blur-2xl pointer-events-none"></div>
 
-        <div class="relative z-10 max-w-3xl">
+        <div class="relative z-10">
 
-            <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/15 border border-white/20 text-white text-[10px] font-black uppercase tracking-widest">
-                <i class="fa-solid fa-wand-magic-sparkles"></i>
-                Persiapkan Dirimu
+            <span class="text-[10px] font-black uppercase tracking-widest rounded-full px-3 py-1.5 bg-white/20">
+                {{ $ruangBelajar->judul ?? 'Ruang Belajar' }}
             </span>
 
-            <h2 class="text-2xl sm:text-3xl font-black text-white mt-5 leading-tight">
-                Mari Hubungkan Pengetahuan Awalmu!
+            <h2 class="text-2xl sm:text-3xl font-black mt-5">
+                {{ $tahapan->judul_tahapan ?? 'Mari mulai berpikir!' }}
             </h2>
 
-            <p class="text-sm sm:text-base text-indigo-50 leading-relaxed mt-4">
-                Sebelum memulai pembelajaran, bacalah materi apersepsi berikut.
-                Hubungkan informasi yang kamu peroleh dengan pengetahuan dan
-                pengalaman yang sudah kamu miliki.
+            <p class="text-sm text-indigo-100 mt-3 max-w-2xl leading-relaxed">
+                Baca materinya, sampaikan pendapatmu sendiri,
+                lalu temukan perspektif baru dari jawaban teman-temanmu.
             </p>
-
-            <div class="flex items-center gap-3 mt-7 text-white/90">
-
-                <div class="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center">
-                    <i class="fa-solid fa-compass"></i>
-                </div>
-
-                <p class="text-xs font-semibold">
-                    Bacalah dengan cermat, pikirkan jawabannya, dan sampaikan pendapatmu.
-                </p>
-
-            </div>
 
         </div>
 
     </div>
 
 
-    {{-- MATERI APERSEPSI --}}
-    <div class="bg-white dark:bg-cyberdark-900 rounded-[2rem] border border-gray-100 dark:border-gray-800 overflow-hidden">
+    {{-- PROGRESS WIZARD --}}
 
-        <div class="p-5 sm:p-7 border-b border-gray-100 dark:border-gray-800">
+    <div class="ap-panel p-4 sm:p-5">
 
-            <div class="flex items-center gap-3">
+        <div
+            class="grid {{ $forumAktif ? 'grid-cols-3' : 'grid-cols-1' }} gap-2"
+            aria-label="Progres aktivitas"
+        >
 
-                <div class="w-11 h-11 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-                    <i class="fa-solid fa-book-open-reader text-indigo-600 dark:text-indigo-400 text-lg"></i>
-                </div>
+            <div class="ap-step" data-ap-indicator="1">
 
-                <div>
-                    <p class="text-[10px] font-black uppercase tracking-widest text-indigo-500">
-                        Materi Pembelajaran
-                    </p>
+                <span class="ap-step-number">
+                    <i class="fa-solid fa-book-open"></i>
+                </span>
 
-                    <h3 class="text-base sm:text-lg font-black text-gray-900 dark:text-white mt-1">
-                        Bacalah dan Pahami Materi Berikut
-                    </h3>
-                </div>
+                <span>01 · Baca Materi</span>
 
             </div>
 
-        </div>
+            @if ($forumAktif)
 
-        <div class="p-5 sm:p-8">
+                <div class="ap-step" data-ap-indicator="2">
 
-            @if (trim(strip_tags($isiMateri)) !== '')
+                    <span class="ap-step-number">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                    </span>
 
-                <article class="materi-content text-sm sm:text-base text-gray-700 dark:text-gray-300 leading-8 break-words">
+                    <span>02 · Jawab Pemantik</span>
 
-                    {!! $isiMateri !!}
+                </div>
 
-                </article>
+                <div class="ap-step" data-ap-indicator="3">
 
-            @else
+                    <span class="ap-step-number">
+                        <i class="fa-solid fa-comments"></i>
+                    </span>
 
-                <div class="p-6 rounded-2xl bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-900/30 text-center">
-
-                    <i class="fa-solid fa-circle-exclamation text-amber-500 text-2xl mb-3"></i>
-
-                    <p class="text-sm font-bold text-amber-700 dark:text-amber-300">
-                        Materi Apersepsi Belum Tersedia
-                    </p>
-
-                    <p class="text-xs text-amber-600 dark:text-amber-400 mt-2">
-                        Guru belum menambahkan isi materi untuk aktivitas ini.
-                    </p>
+                    <span>03 · Forum Diskusi</span>
 
                 </div>
 
@@ -240,200 +687,892 @@
 
         </div>
 
+        <div class="mt-4 h-2 rounded-full bg-gray-100 dark:bg-gray-700 overflow-hidden">
+
+            <div
+                id="apProgress"
+                class="h-full bg-gradient-to-r from-indigo-500 to-violet-500 rounded-full transition-all duration-300"
+                style="width:{{ round($langkahAwal / $jumlahLangkah * 100) }}%"
+            ></div>
+
+        </div>
+
     </div>
 
 
-    {{-- FORM JAWABAN DAN FORUM --}}
-    <form
-        id="form-apersepsi"
-        action="{{ route('siswa.ruang-belajar.tahapan.selesaikan', [
-            'ruang_belajar_id' => $ruangBelajar->id,
-            'tahapan_id' => $tahapan->id
-        ]) }}"
-        method="POST">
+    {{-- =====================================================
+         LAYAR 1: MATERI
+    ====================================================== --}}
 
-        @csrf
+    <section data-ap-screen="1" class="ap-panel">
 
-        @if ($forumAktif)
+        <div class="border-b border-gray-100 dark:border-gray-700 p-5 sm:p-7 flex items-center gap-3">
 
-            {{-- FORUM DISKUSI --}}
-            <div class="bg-white dark:bg-cyberdark-900 rounded-[2rem] border border-gray-100 dark:border-gray-800 overflow-hidden">
-
-                <div class="p-5 sm:p-7 border-b border-gray-100 dark:border-gray-800">
-
-                    <div class="flex items-start gap-4">
-
-                        <div class="w-12 h-12 shrink-0 rounded-2xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-                            <i class="fa-solid fa-comments text-amber-600 dark:text-amber-400 text-xl"></i>
-                        </div>
-
-                        <div class="min-w-0">
-
-                            <span class="text-[10px] font-black uppercase tracking-widest text-amber-600 dark:text-amber-400">
-                                Forum Diskusi
-                            </span>
-
-                            <h3 class="text-lg font-black text-gray-900 dark:text-white mt-1">
-                                {{ $judulForum }}
-                            </h3>
-
-                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-2 leading-relaxed">
-                                Sampaikan pendapatmu berdasarkan materi yang telah kamu baca.
-                            </p>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-
-                <div class="p-5 sm:p-8">
-
-                    {{-- PERTANYAAN GURU --}}
-                    <div class="rounded-2xl bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/40 p-5 sm:p-6">
-
-                        <div class="flex items-center gap-2 mb-3">
-
-                            <span class="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center">
-                                <i class="fa-solid fa-circle-question text-indigo-600 dark:text-indigo-400"></i>
-                            </span>
-
-                            <span class="text-[10px] font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400">
-                                Pertanyaan Pemantik dari Guru
-                            </span>
-
-                        </div>
-
-                        <p class="text-sm sm:text-base font-semibold text-indigo-950 dark:text-indigo-100 leading-relaxed">
-
-                            {{ $pertanyaanForum }}
-
-                        </p>
-
-                    </div>
-
-
-                    {{-- JAWABAN SISWA --}}
-                    <div class="mt-6">
-
-                        <label for="jawaban-forum" class="block text-sm font-black text-gray-900 dark:text-white mb-2">
-                            Tuliskan Pendapatmu
-                        </label>
-
-                        <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">
-                            Jelaskan pemikiranmu menggunakan bahasamu sendiri.
-                            Kamu dapat menghubungkan jawaban dengan materi maupun pengalaman yang pernah kamu temui.
-                        </p>
-
-                        <textarea
-                            id="jawaban-forum"
-                            name="jawaban[forum]"
-                            class="answer-area w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 p-4 text-sm text-gray-800 dark:text-gray-200 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400"
-                            placeholder="Tuliskan jawaban atau pendapatmu di sini..."
-                            required>{{ $jawabanSebelumnya }}</textarea>
-
-                        @error('jawaban.forum')
-                            <p class="text-xs text-red-500 mt-2">
-                                {{ $message }}
-                            </p>
-                        @enderror
-
-                        @error('jawaban')
-                            <p class="text-xs text-red-500 mt-2">
-                                {{ $message }}
-                            </p>
-                        @enderror
-
-                        @if ($batasJawaban)
-                            <p class="text-xs text-gray-400 mt-3">
-                                <i class="fa-solid fa-circle-info mr-1"></i>
-                                Batas jawaban sesuai pengaturan guru:
-                                {{ $batasJawaban }}
-                            </p>
-                        @endif
-
-                    </div>
-
-
-                    {{-- CATATAN --}}
-                    <div class="mt-6 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 flex items-start gap-3">
-
-                        <i class="fa-solid fa-lightbulb text-amber-500 mt-0.5"></i>
-
-                        <p class="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
-                            Tidak perlu khawatir jika jawabanmu belum sempurna.
-                            Hal terpenting adalah kamu berusaha berpikir,
-                            menganalisis, dan menyampaikan pendapatmu sendiri.
-                        </p>
-
-                    </div>
-
-                </div>
-
+            <div class="w-11 h-11 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl grid place-items-center">
+                <i class="fa-solid fa-book-open-reader text-indigo-600 dark:text-indigo-400"></i>
             </div>
 
-        @else
+            <div>
 
-            {{-- FORUM TIDAK DIAKTIFKAN --}}
-            <div class="bg-white dark:bg-cyberdark-900 rounded-[2rem] border border-gray-100 dark:border-gray-800 p-6 sm:p-8">
+                <p class="text-[10px] font-black tracking-widest text-indigo-500 uppercase">
+                    Langkah 01
+                </p>
 
-                <div class="flex items-center gap-4">
-
-                    <div class="w-12 h-12 shrink-0 rounded-2xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                        <i class="fa-solid fa-bookmark text-green-600 dark:text-green-400 text-xl"></i>
-                    </div>
-
-                    <div>
-                        <h3 class="font-black text-gray-900 dark:text-white">
-                            Materi Apersepsi Selesai Dibaca?
-                        </h3>
-
-                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">
-                            Forum diskusi tidak diaktifkan oleh guru.
-                            Jika sudah memahami materi, kamu dapat melanjutkan aktivitas.
-                        </p>
-                    </div>
-
-                </div>
-
-            </div>
-
-        @endif
-
-
-        {{-- TOMBOL SELESAIKAN --}}
-        <div class="bg-white dark:bg-cyberdark-900 rounded-[2rem] border border-gray-100 dark:border-gray-800 p-5 sm:p-7 mt-6">
-
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-
-                <div>
-
-                    <p class="text-sm font-black text-gray-900 dark:text-white">
-                        Sudah selesai dengan Apersepsi?
-                    </p>
-
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        Pastikan kamu sudah membaca materi dan mengisi forum jika tersedia.
-                    </p>
-
-                </div>
-
-                <button
-                    type="submit"
-                    class="inline-flex items-center justify-center gap-2 px-7 py-4 rounded-2xl bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-indigo-500/20 border-b-4 border-indigo-800 transition-all hover:-translate-y-0.5">
-
-                    <i class="fa-solid fa-paper-plane"></i>
-                    Selesaikan Apersepsi
-
-                </button>
+                <h3 class="font-black text-lg text-gray-900 dark:text-white">
+                    Kenali Materi
+                </h3>
 
             </div>
 
         </div>
 
-    </form>
+
+        <div class="p-5 sm:p-8 space-y-6">
+
+            @if ($materiTersedia)
+
+                <article class="ap-material text-gray-700 dark:text-gray-200 text-sm sm:text-base">
+
+                    {!! $isiMateri !!}
+
+                </article>
+
+            @else
+
+                <div class="rounded-2xl bg-amber-50 dark:bg-amber-900/20 p-6 text-amber-700 dark:text-amber-300 text-sm">
+
+                    <i class="fa-solid fa-circle-info mr-2"></i>
+
+                    Guru belum menambahkan materi apersepsi.
+
+                </div>
+
+            @endif
+
+
+            @if ($forumAktif)
+
+                <div class="flex flex-wrap items-center justify-between gap-3 pt-5 border-t border-gray-100 dark:border-gray-700">
+
+                    <p class="text-xs text-gray-500 dark:text-gray-400">
+
+                        <i class="fa-solid fa-lightbulb text-amber-500 mr-1"></i>
+
+                        Sudah memahami materi? Lanjutkan ke pertanyaan guru.
+
+                    </p>
+
+                    <button
+                        type="button"
+                        data-ap-next="2"
+                        class="ap-btn ap-btn-primary"
+                    >
+
+                        Lanjut ke Pertanyaan
+
+                        <i class="fa-solid fa-arrow-right"></i>
+
+                    </button>
+
+                </div>
+
+            @else
+
+                <form
+                    method="POST"
+                    action="{{ route('siswa.ruang-belajar.tahapan.selesaikan', [
+                        'ruang_belajar_id' => $ruangBelajar->id,
+                        'tahapan_id' => $tahapan->id
+                    ]) }}"
+                    class="pt-5 border-t border-gray-100 dark:border-gray-700"
+                >
+
+                    @csrf
+
+                    <button type="submit" class="ap-btn ap-btn-primary">
+
+                        Selesaikan Apersepsi
+
+                        <i class="fa-solid fa-check"></i>
+
+                    </button>
+
+                </form>
+
+            @endif
+
+        </div>
+
+    </section>
+
+
+    @if ($forumAktif)
+
+        {{-- =================================================
+             LAYAR 2: PERTANYAAN PEMANTIK
+        ================================================== --}}
+
+        <section data-ap-screen="2" hidden class="ap-panel">
+
+            <div class="border-b border-gray-100 dark:border-gray-700 p-5 sm:p-7 flex items-center gap-3">
+
+                <div class="w-11 h-11 bg-violet-100 dark:bg-violet-900/30 rounded-xl grid place-items-center">
+                    <i class="fa-solid fa-pen-to-square text-violet-600 dark:text-violet-400"></i>
+                </div>
+
+                <div>
+
+                    <p class="text-[10px] font-black tracking-widest text-violet-500 uppercase">
+                        Langkah 02
+                    </p>
+
+                    <h3 class="font-black text-lg text-gray-900 dark:text-white">
+                        Pertanyaan Pemantik
+                    </h3>
+
+                </div>
+
+            </div>
+
+
+            <div class="p-5 sm:p-8 space-y-6">
+
+
+                {{-- PERTANYAAN GURU --}}
+
+                <div class="rounded-2xl bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/40 p-5 sm:p-7">
+
+                    <div class="flex items-center gap-2 text-indigo-600 dark:text-indigo-300 text-[11px] uppercase tracking-wider font-black mb-3">
+
+                        <i class="fa-solid fa-circle-question"></i>
+
+                        Pertanyaan dari Guru
+
+                    </div>
+
+                    <div class="ap-trix-content text-indigo-950 dark:text-indigo-100 font-semibold text-base sm:text-lg">
+
+                        @if (
+                            trim(strip_tags($pertanyaanForum)) !== ''
+                            || preg_match('/<img\b/i', $pertanyaanForum)
+                        )
+
+                            {!! $pertanyaanForum !!}
+
+                        @else
+
+                            <p>
+                                Bagaimana pendapatmu tentang materi yang baru dipelajari?
+                            </p>
+
+                        @endif
+
+                    </div>
+
+                </div>
+
+
+                @if (!$sudahMenjawab)
+
+                    {{-- FORM JAWABAN SISWA --}}
+
+                    <form
+                        id="apersepsiAnswerForm"
+                        method="POST"
+                        action="{{ route('siswa.ruang-belajar.tahapan.apersepsi.jawab', [
+                            'ruang_belajar_id' => $ruangBelajar->id,
+                            'tahapan_id' => $tahapan->id
+                        ]) }}"
+                        class="space-y-4"
+                    >
+
+                        @csrf
+
+
+                        <div>
+
+                            <label
+                                for="{{ $editorId }}"
+                                class="block font-black text-gray-900 dark:text-white text-sm mb-2"
+                            >
+
+                                Apa pendapatmu?
+
+                            </label>
+
+                            <p class="text-xs text-gray-500 dark:text-gray-400">
+
+                                Tulis jawaban dengan bahasamu sendiri.
+                                Gunakan editor untuk membuat jawaban lebih rapi.
+
+                            </p>
+
+                        </div>
+
+
+                        {{-- TRIX EDITOR SISWA --}}
+
+                        <div class="ap-editor-wrapper">
+
+                            <input
+                                type="hidden"
+                                id="{{ $editorId }}"
+                                name="jawaban[forum]"
+                                value="{{ $jawabanSebelumnya }}"
+                            >
+
+                            <trix-editor
+                                input="{{ $editorId }}"
+                                class="ap-trix-editor"
+                                placeholder="Tuliskan pendapat dan jawabanmu di sini..."
+                            ></trix-editor>
+
+                        </div>
+
+
+                        @error('jawaban.forum')
+
+                            <p class="text-xs text-red-500">
+                                {{ $message }}
+                            </p>
+
+                        @enderror
+
+
+                        @if ($batasJawaban)
+
+                            <p class="text-xs text-gray-400">
+                                Pengaturan batas jawaban guru: {{ $batasJawaban }}
+                            </p>
+
+                        @endif
+
+
+                        {{-- TOMBOL FORM --}}
+
+                        <div class="flex flex-wrap justify-between items-center gap-3">
+
+                            <button
+                                type="button"
+                                data-ap-next="1"
+                                class="ap-btn ap-btn-secondary"
+                            >
+
+                                <i class="fa-solid fa-arrow-left"></i>
+
+                                Kembali ke Materi
+
+                            </button>
+
+                            <button
+                                type="submit"
+                                id="submitApersepsiAnswer"
+                                class="ap-btn ap-btn-primary"
+                            >
+
+                                <i class="fa-solid fa-paper-plane"></i>
+
+                                Kirim Jawaban & Buka Diskusi
+
+                            </button>
+
+                        </div>
+
+                    </form>
+
+                @else
+
+                    {{-- JAWABAN YANG SUDAH TERKIRIM --}}
+
+                    <div class="rounded-2xl border border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20 dark:border-emerald-900 p-5">
+
+                        <p class="text-sm font-black text-emerald-700 dark:text-emerald-300 mb-3">
+
+                            <i class="fa-solid fa-circle-check mr-2"></i>
+
+                            Jawabanmu sudah tersimpan
+
+                        </p>
+
+                        <div class="ap-trix-content text-gray-700 dark:text-gray-200">
+
+                            {!! $jawabanSayaHtml !!}
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="flex flex-wrap justify-between gap-3">
+
+                        <button
+                            type="button"
+                            data-ap-next="1"
+                            class="ap-btn ap-btn-secondary"
+                        >
+
+                            Kembali ke Materi
+
+                        </button>
+
+                        <button
+                            type="button"
+                            data-ap-next="3"
+                            class="ap-btn ap-btn-primary"
+                        >
+
+                            Lihat Forum Diskusi
+
+                            <i class="fa-solid fa-arrow-right"></i>
+
+                        </button>
+
+                    </div>
+
+                @endif
+
+            </div>
+
+        </section>
+
+
+        {{-- =================================================
+             LAYAR 3: FORUM DISKUSI
+        ================================================== --}}
+
+        @if ($sudahMenjawab)
+
+            <section data-ap-screen="3" hidden class="space-y-5">
+
+
+                {{-- HEADER FORUM --}}
+
+                <div class="ap-panel p-5 sm:p-7">
+
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+
+                        <div>
+
+                            <p class="text-[10px] font-black tracking-widest text-amber-500 uppercase">
+                                Langkah 03
+                            </p>
+
+                            <h3 class="font-black text-xl text-gray-900 dark:text-white mt-1">
+                                {{ $judulForum }}
+                            </h3>
+
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                                Baca pendapat teman dan temukan sudut pandang baru.
+                            </p>
+
+                        </div>
+
+                        <span class="rounded-full px-3 py-2 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 text-xs font-bold">
+
+                            <i class="fa-solid fa-users mr-1"></i>
+
+                            {{ $jumlahJawaban }} jawaban
+
+                        </span>
+
+                    </div>
+
+
+                    {{-- PERTANYAAN FORUM --}}
+
+                    <div class="mt-6 rounded-2xl bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/40 p-5">
+
+                        <p class="text-xs uppercase font-black tracking-wider text-indigo-600 dark:text-indigo-300 mb-3">
+
+                            Pertanyaan Pemantik
+
+                        </p>
+
+                        <div class="ap-trix-content text-indigo-950 dark:text-indigo-100 font-semibold">
+
+                            {!! $pertanyaanForum !!}
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                {{-- =================================================
+                     JAWABAN SAYA
+                ================================================== --}}
+
+                <div class="ap-panel p-5 sm:p-7 border-l-4 !border-l-indigo-500">
+
+                    <div class="flex items-center gap-3 mb-4">
+
+                        <div class="w-10 h-10 rounded-xl bg-indigo-600 text-white grid place-items-center font-black">
+
+                            {{ strtoupper(mb_substr(auth()->user()->name ?? 'S', 0, 1)) }}
+
+                        </div>
+
+                        <div>
+
+                            <p class="font-black text-sm text-gray-900 dark:text-white">
+
+                                Jawaban Saya
+
+                                <span class="text-[10px] text-indigo-500 ml-1">
+                                    (Kamu)
+                                </span>
+
+                            </p>
+
+                            <p class="text-[11px] text-gray-400">
+                                Sudah dikirim
+                            </p>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="ap-trix-content text-gray-700 dark:text-gray-200">
+
+                        {!! $jawabanSayaHtml !!}
+
+                    </div>
+
+                </div>
+
+
+                {{-- =================================================
+                     JAWABAN TEMAN
+                ================================================== --}}
+
+                <div class="flex items-center justify-between">
+
+                    <h4 class="font-black text-gray-900 dark:text-white">
+                        Pendapat Teman
+                    </h4>
+
+                    <span class="text-xs text-gray-400">
+                        {{ $jawabanTeman->count() }} jawaban lainnya
+                    </span>
+
+                </div>
+
+
+                @forelse ($jawabanTeman as $item)
+
+                    @php
+
+                        $namaTeman = $item->user?->name ?? 'Siswa';
+
+                        $isiJawabanTeman = data_get(
+                            $item->jawaban,
+                            'forum',
+                            ''
+                        );
+
+                        $isiJawabanTeman = $normalisasiUrlTrix(
+                            $isiJawabanTeman
+                        );
+
+                    @endphp
+
+
+                    <article class="ap-panel p-5 sm:p-6">
+
+                        <div class="flex items-center gap-3 mb-4">
+
+                            <div class="w-10 h-10 rounded-xl bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 grid place-items-center font-black">
+
+                                {{ strtoupper(mb_substr($namaTeman, 0, 1)) }}
+
+                            </div>
+
+                            <div class="min-w-0">
+
+                                <p class="font-black text-sm text-gray-900 dark:text-white truncate">
+
+                                    {{ $namaTeman }}
+
+                                </p>
+
+                                <p class="text-[11px] text-gray-400">
+
+                                    {{ $item->updated_at?->diffForHumans() ?? 'Telah mengirim jawaban' }}
+
+                                </p>
+
+                            </div>
+
+                        </div>
+
+
+                        {{-- KONTEN TRIX JAWABAN TEMAN --}}
+
+                        <div class="ap-trix-content text-gray-700 dark:text-gray-200">
+
+                            {!! $isiJawabanTeman !!}
+
+                        </div>
+
+                    </article>
+
+
+                @empty
+
+                    <div class="ap-panel p-8 text-center">
+
+                        <i class="fa-solid fa-comments text-3xl text-indigo-300 mb-3"></i>
+
+                        <p class="font-bold text-gray-800 dark:text-gray-200">
+                            Belum ada jawaban teman
+                        </p>
+
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                            Kamu sudah menjadi yang pertama!
+                            Jawaban teman akan muncul setelah mereka mengirimnya.
+                        </p>
+
+                    </div>
+
+                @endforelse
+
+
+                {{-- =================================================
+                     SELESAIKAN APERSEPSI
+                ================================================== --}}
+
+                <div class="ap-panel p-5 sm:p-7 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+
+                    <div>
+
+                        <p class="font-black text-gray-900 dark:text-white">
+                            Siap melanjutkan pembelajaran?
+                        </p>
+
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            Jawabanmu sudah tersimpan.
+                            Selesaikan tahap ini untuk memperoleh XP.
+                        </p>
+
+                    </div>
+
+
+                    <form
+                        method="POST"
+                        action="{{ route('siswa.ruang-belajar.tahapan.selesaikan', [
+                            'ruang_belajar_id' => $ruangBelajar->id,
+                            'tahapan_id' => $tahapan->id
+                        ]) }}"
+                    >
+
+                        @csrf
+
+                        <button type="submit" class="ap-btn ap-btn-primary">
+
+                            Selesaikan
+
+                            <i class="fa-solid fa-trophy"></i>
+
+                        </button>
+
+                    </form>
+
+                </div>
+
+
+                <button
+                    type="button"
+                    data-ap-next="2"
+                    class="ap-btn ap-btn-secondary"
+                >
+
+                    <i class="fa-solid fa-arrow-left"></i>
+
+                    Lihat Jawabanku
+
+                </button>
+
+            </section>
+
+        @endif
+
+    @endif
 
 </div>
 
 @endsection
+
+
+{{-- =========================================================
+     SCRIPTS
+========================================================= --}}
+
+@push('scripts')
+
+<script src="https://cdn.jsdelivr.net/npm/trix@2.1.15/dist/trix.umd.min.js"></script>
+
+<script>
+
+document.addEventListener('DOMContentLoaded', function () {
+
+    /*
+    |--------------------------------------------------------------------------
+    | 1. WIZARD APERSEPSI
+    |--------------------------------------------------------------------------
+    */
+
+    const wizard = document.getElementById('apersepsiWizard');
+
+    if (!wizard) return;
+
+    const hasAnswer = wizard.dataset.hasAnswer === '1';
+
+    const forumActive = wizard.dataset.forumActive === '1';
+
+    const maxStep = forumActive ? 3 : 1;
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | 2. NAVIGASI WIZARD
+    |--------------------------------------------------------------------------
+    */
+
+    function goTo(step) {
+
+        step = Number(step);
+
+        if (
+            step < 1 ||
+            step > maxStep ||
+            (step === 3 && !hasAnswer)
+        ) {
+            return;
+        }
+
+
+        // Tampilkan layar sesuai langkah.
+        wizard.querySelectorAll('[data-ap-screen]').forEach(function (screen) {
+
+            screen.hidden = Number(screen.dataset.apScreen) !== step;
+
+        });
+
+
+        // Perbarui indikator langkah.
+        wizard.querySelectorAll('[data-ap-indicator]').forEach(function (indicator) {
+
+            const index = Number(indicator.dataset.apIndicator);
+
+            indicator.classList.toggle('is-current', index === step);
+
+            indicator.classList.toggle('is-done', index < step);
+
+            if (index === step) {
+
+                indicator.setAttribute('aria-current', 'step');
+
+            } else {
+
+                indicator.removeAttribute('aria-current');
+
+            }
+
+        });
+
+
+        // Perbarui progress bar.
+        const progress = document.getElementById('apProgress');
+
+        if (progress) {
+
+            progress.style.width = (step / maxStep * 100) + '%';
+
+        }
+
+
+        wizard.dataset.currentStep = String(step);
+
+
+        wizard.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+        });
+
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | 3. EVENT NAVIGASI
+    |--------------------------------------------------------------------------
+    */
+
+    wizard.querySelectorAll('[data-ap-next]').forEach(function (button) {
+
+        button.addEventListener('click', function () {
+
+            goTo(button.dataset.apNext);
+
+        });
+
+    });
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | 4. VALIDASI EDITOR JAWABAN SISWA
+    |--------------------------------------------------------------------------
+    */
+
+    const answerForm = document.getElementById('apersepsiAnswerForm');
+
+    const answerEditor = document.querySelector(
+        'trix-editor[input="jawaban-forum-editor"]'
+    );
+
+    const answerInput = document.getElementById('jawaban-forum-editor');
+
+
+    if (answerForm && answerEditor && answerInput) {
+
+        answerForm.addEventListener('submit', function (event) {
+
+            const plainText = answerEditor.editor
+                .getDocument()
+                .toString()
+                .trim();
+
+            const memilikiGambar = /<img\b/i.test(answerInput.value);
+
+
+            if (!plainText && !memilikiGambar) {
+
+                event.preventDefault();
+
+                answerEditor.focus();
+
+                alert('Silakan tuliskan jawaban terlebih dahulu.');
+
+                return;
+
+            }
+
+
+            // Sinkronisasi terakhir sebelum form dikirim.
+            answerInput.value = answerEditor.value;
+
+
+            const submitButton = document.getElementById(
+                'submitApersepsiAnswer'
+            );
+
+
+            if (submitButton) {
+
+                submitButton.disabled = true;
+
+                submitButton.innerHTML = `
+                    <i class="fa-solid fa-spinner fa-spin"></i>
+                    Mengirim Jawaban...
+                `;
+
+                submitButton.classList.add(
+                    'opacity-70',
+                    'cursor-not-allowed'
+                );
+
+            }
+
+        });
+
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | 5. TAMPILKAN LAYAR AWAL
+    |--------------------------------------------------------------------------
+    */
+
+    const validationFailed = @json($errors->any());
+
+    goTo(
+        validationFailed && forumActive && !hasAnswer
+            ? 2
+            : Number(wizard.dataset.startStep || 1)
+    );
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | 6. LAZY LOAD GAMBAR MATERI
+    |--------------------------------------------------------------------------
+    */
+
+    document.querySelectorAll('.ap-material img').forEach(function (img) {
+
+        img.loading = 'lazy';
+
+        img.addEventListener('error', function () {
+
+            if (img.dataset.failed) return;
+
+            img.dataset.failed = '1';
+
+            const note = document.createElement('p');
+
+            note.className =
+                'text-sm text-amber-600 dark:text-amber-400 my-3';
+
+            note.textContent =
+                'Gambar tidak dapat dimuat. Periksa URL atau akses penyimpanan gambar.';
+
+            img.insertAdjacentElement('afterend', note);
+
+            img.style.display = 'none';
+
+        });
+
+    });
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | 7. LAZY LOAD GAMBAR PERTANYAAN DAN JAWABAN
+    |--------------------------------------------------------------------------
+    */
+
+    document.querySelectorAll('.ap-trix-content img').forEach(function (img) {
+
+        img.loading = 'lazy';
+
+        img.addEventListener('error', function () {
+
+            if (img.dataset.failed) return;
+
+            img.dataset.failed = '1';
+
+            const note = document.createElement('p');
+
+            note.className =
+                'text-xs text-amber-600 dark:text-amber-400 my-2';
+
+            note.textContent =
+                'Gambar tidak dapat dimuat.';
+
+            img.insertAdjacentElement('afterend', note);
+
+            img.style.display = 'none';
+
+        });
+
+    });
+
+});
+
+</script>
+
+@endpush

@@ -122,9 +122,9 @@
             </a>
 
             <!-- Item 5: Leaderboard -->
-            <a href="{{ url('siswa/leaderboard') }}" 
-               class="flex items-center space-x-3 px-3 sm:px-3.5 py-2 sm:py-2.5 rounded-2xl transition-all duration-200 group {{ request()->is('siswa/leaderboard*') ? 'bg-gradient-to-r from-pink-500/10 to-purple-500/10 text-pink-600 dark:text-pink-400 border border-pink-500/20 font-bold shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100/80 dark:hover:bg-cyberdark-800/80 hover:text-gray-900 dark:hover:text-pink-300 font-semibold' }}">
-                <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center transition-colors shrink-0 {{ request()->is('siswa/leaderboard*') ? 'bg-pink-500 text-white shadow-md shadow-pink-500/30' : 'bg-gray-100 dark:bg-cyberdark-800 group-hover:bg-pink-500/10 group-hover:text-pink-500' }}">
+            <a href="{{ route('siswa.leaderboard.index') }}" 
+               class="flex items-center space-x-3 px-3 sm:px-3.5 py-2 sm:py-2.5 rounded-2xl transition-all duration-200 group {{ request()->routeIs('siswa.leaderboard.*') ? 'bg-gradient-to-r from-pink-500/10 to-purple-500/10 text-pink-600 dark:text-pink-400 border border-pink-500/20 font-bold shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100/80 dark:hover:bg-cyberdark-800/80 hover:text-gray-900 dark:hover:text-pink-300 font-semibold' }}">
+                <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center transition-colors shrink-0 {{ request()->routeIs('siswa.leaderboard.*') ? 'bg-pink-500 text-white shadow-md shadow-pink-500/30' : 'bg-gray-100 dark:bg-cyberdark-800 group-hover:bg-pink-500/10 group-hover:text-pink-500' }}">
                     <i class="fa-solid fa-trophy text-xs sm:text-sm"></i>
                 </div>
                 <span class="sidebar-text text-xs tracking-wide truncate">Leaderboard</span>

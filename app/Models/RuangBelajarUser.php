@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class RuangBelajarUser extends Model
 {
-    protected $table = 'ruang_belajar_user';
+    protected $table = 'ruang_belajar_users';
 
     protected $fillable = [
         'user_id',

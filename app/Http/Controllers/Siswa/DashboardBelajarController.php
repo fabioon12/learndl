@@ -12,78 +12,98 @@ use Illuminate\Support\Facades\DB;
 
 class DashboardBelajarController extends Controller
 {
+
     public function index()
     {
         $user = Auth::user();
 
-        // Materi yang sudah diambil siswa
-        $materis = Materi::whereHas('users', function ($query) use ($user) {
+        $materis = Materi::whereHas('siswa', function ($query) use ($user) {
             $query->where('users.id', $user->id);
         })
-        ->with(['submateris' => function ($query) {
-            $query->where('status', 'terbit')
-                  ->orderBy('urutan');
-        }])
+        ->with([
+            'submateris' => function ($query) {
+                $query->where('status', 'terbit')
+                    ->orderBy('urutan');
+            }
+        ])
         ->latest()
         ->get();
 
-        // Submateri yang sudah diselesaikan
         $completedIds = SubmateriProgress::where('user_id', $user->id)
             ->whereNotNull('completed_at')
             ->pluck('submateri_id')
             ->toArray();
 
-        $totalXp = $user->totalXp();
+        $totalXp = max(0, (int) SubmateriProgress::where('user_id', $user->id)
+            ->whereNotNull('completed_at')
+            ->sum('xp_earned'));
 
-        // Level: setiap 100 EXP naik satu level
-        $level = (int) floor($totalXp / 100) + 1;
+        $xpNeeded = 1000;
 
-        // EXP untuk level selanjutnya
-        $xpInLevel = $totalXp % 100;
-        $xpNeeded = 100;
-        $xpPercentage = ($xpInLevel / $xpNeeded) * 100;
 
-        // Level: setiap 100 XP naik satu level
-        $level = (int) floor($totalXp / 100) + 1;
+        $level = intdiv($totalXp, $xpNeeded) + 1;
 
-        // XP untuk level selanjutnya
-        $xpInLevel = $totalXp % 100;
-        $xpNeeded = 100;
-        $xpPercentage = ($xpInLevel / $xpNeeded) * 100;
+        $xpInLevel = $totalXp % $xpNeeded;
 
-        // Statistik pembelajaran
-        $totalSubmateri = $materis->sum(function ($materi) {
-            return $materi->submateris->count();
-        });
+        // Persentase menuju level berikutnya
+        $xpPercentage = round(
+            ($xpInLevel / $xpNeeded) * 100,
+            2
+        );
 
-        $totalCompleted = count(array_intersect(
-            $completedIds,
-            $materis->flatMap->submateris->pluck('id')->toArray()
-        ));
+        $allSubmateriIds = $materis
+            ->flatMap(function ($materi) {
+                return $materi->submateris->pluck('id');
+            })
+            ->unique()
+            ->map(fn ($id) => (string) $id)
+            ->all();
+
+        $totalSubmateri = count($allSubmateriIds);
+
+        $completedIdsNormalized = collect($completedIds)
+            ->map(fn ($id) => (string) $id)
+            ->unique()
+            ->all();
+
+        $totalCompleted = count(
+            array_intersect(
+                $allSubmateriIds,
+                $completedIdsNormalized
+            )
+        );
 
         $overallProgress = $totalSubmateri > 0
-            ? round(($totalCompleted / $totalSubmateri) * 100)
+            ? round(($totalCompleted / $totalSubmateri) * 100, 2)
             : 0;
 
-        return view('siswa.aktivitas-materi.dashboard.index', compact(
-            'user',
-            'materis',
-            'completedIds',
-            'totalXp',
-            'level',
-            'xpInLevel',
-            'xpNeeded',
-            'xpPercentage',
-            'totalSubmateri',
-            'totalCompleted',
-            'overallProgress'
-        ));
+        $xpMisiSelesai = SubmateriProgress::where('user_id', $user->id)
+            ->whereNotNull('completed_at')
+            ->sum('xp_earned');
+        return view(
+            'siswa.aktivitas-materi.dashboard.index',
+            compact(
+                'user',
+                'materis',
+                'completedIds',
+                'totalXp',
+                'level',
+                'xpInLevel',
+                'xpNeeded',
+                'xpPercentage',
+                'totalSubmateri',
+                'totalCompleted',
+                'overallProgress',
+                'xpMisiSelesai'
+            )
+        );
     }
+
     public function showSubmateri($materiId, $submateriId)
     {
         $user = Auth::user();
 
-        $materi = Materi::whereHas('users', function ($query) use ($user) {
+        $materi = Materi::whereHas('siswa', function ($query) use ($user) {
             $query->where('users.id', $user->id);
         })->findOrFail($materiId);
 
@@ -126,63 +146,71 @@ class DashboardBelajarController extends Controller
     }
     
 
+
     public function completeSubmateri($materiId, $submateriId)
     {
         $user = Auth::user();
 
-        // 1. Pastikan materi sudah diambil siswa
         $materi = Materi::whereHas('siswa', function ($query) use ($user) {
             $query->where('users.id', $user->id);
         })->findOrFail($materiId);
 
-        // 2. Pastikan submateri termasuk dalam materi dan sudah terbit
         $submateri = Submateri::where('materi_id', $materi->id)
             ->where('status', 'terbit')
             ->findOrFail($submateriId);
 
         try {
-            DB::transaction(function () use ($user, $materi, $submateri) {
-
-                // 3. Cek apakah sudah pernah diselesaikan
-                $progress = SubmateriProgress::where('user_id', $user->id)
+            $earnedXp = DB::transaction(function () use (
+                $user,
+                $materi,
+                $submateri
+            ) {
+                $progress = SubmateriProgress::where(
+                    'user_id',
+                    $user->id
+                )
                     ->where('submateri_id', $submateri->id)
                     ->lockForUpdate()
                     ->first();
 
-                // Jangan berikan EXP dua kali
+                // Sudah selesai: jangan berikan XP dua kali
                 if ($progress && $progress->completed_at !== null) {
-                    return;
+                    return 0;
                 }
 
-                // 4. Cari submateri sebelumnya yang berstatus terbit
-                $previousSubmateri = Submateri::where('materi_id', $materi->id)
+                $previousSubmateri = Submateri::where(
+                    'materi_id',
+                    $materi->id
+                )
                     ->where('status', 'terbit')
                     ->where('urutan', '<', $submateri->urutan)
                     ->orderByDesc('urutan')
                     ->first();
 
-                // 5. Pastikan submateri sebelumnya sudah selesai
                 if ($previousSubmateri) {
                     $previousCompleted = SubmateriProgress::where(
                         'user_id',
                         $user->id
                     )
-                        ->where('submateri_id', $previousSubmateri->id)
+                        ->where(
+                            'submateri_id',
+                            $previousSubmateri->id
+                        )
                         ->whereNotNull('completed_at')
                         ->exists();
 
                     if (!$previousCompleted) {
-                        abort(403, 'Selesaikan submateri sebelumnya terlebih dahulu.');
+                        abort(
+                            403,
+                            'Selesaikan submateri sebelumnya terlebih dahulu.'
+                        );
                     }
                 }
 
-                // 6. Tentukan EXP
-                $xp = $submateri->xp_reward ?? 25;
+                $xp = (int) ($submateri->xp_reward ?? 25);
 
-                // 7. Simpan progres
                 if (!$progress) {
                     $progress = new SubmateriProgress();
-
                     $progress->user_id = $user->id;
                     $progress->submateri_id = $submateri->id;
                 }
@@ -190,11 +218,18 @@ class DashboardBelajarController extends Controller
                 $progress->xp_earned = $xp;
                 $progress->completed_at = now();
                 $progress->save();
+
+                return $xp;
             });
 
             return redirect()
-                ->route('dashboard-belajar')
-                ->with('success', 'Selamat! Submateri berhasil diselesaikan.');
+                ->route(
+                    'siswa.ruang-materi.dashboard-belajar',
+                    $materi->id
+                )
+                ->with('success', 'Submateri berhasil diselesaikan!')
+                ->with('earned_xp', $earnedXp)
+                ->with('completed_submateri', $submateri->judul_sub);
 
         } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
             throw $e;
@@ -208,6 +243,7 @@ class DashboardBelajarController extends Controller
             );
         }
     }
+
 
 
 }

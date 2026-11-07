@@ -14,11 +14,13 @@ use App\Http\Controllers\Siswa\TahapanController as SiswaTahapanController;
 use App\Http\Controllers\Siswa\MateriController as SiswaMateriController;
 use App\Http\Controllers\Siswa\DashboardBelajarController as SiswaDashboardBelajarController;
 use App\Http\Controllers\Siswa\UjianController as SiswaUjianController;
+use App\Http\Controllers\Siswa\LeaderboardController;
 
 
 
 /* Deklarasi Controller Guru */
 use App\Http\Controllers\Guru\DashboardController as GuruDashboardController;
+use App\Http\Controllers\Guru\LeaderboardController as GuruLeaderboardController;
 
 /* controller ruang belajar */
 use App\Http\Controllers\Guru\RuangbelajarController as GuruRuangBelajarController;
@@ -83,11 +85,11 @@ Route::middleware('auth')->group(function () {
         /* Dashboard Siswa */
         Route::get('/dashboard', [SiswaDashboardController::class, 'index'])->name('dashboard');
        
-
         /* Profil Siswa */
         Route::get('/profil', [SiswaProfilController::class, 'index'])->name('profil');
         Route::put('/profil/update-profil', [SiswaProfilController::class, 'updateProfil'])->name('profil.update-profil');
         Route::put('/profil/update-password', [SiswaProfilController::class, 'updatePassword'])->name('profil.update-password');
+        Route::get('/leaderboard', [LeaderboardController::class, 'index'])->name('leaderboard.index');
 
 
         /* Ruang Belajar */
@@ -99,6 +101,7 @@ Route::middleware('auth')->group(function () {
             Route::get('/tahapan/{id}', [SiswaTahapanController::class, 'index'])->name('tahapan');
             Route::get('/tahapan/{ruang_belajar_id}/{tahapan_id}', [SiswaTahapanController::class, 'show'])->name('tahapan.show');
             Route::post('/tahapan/{ruang_belajar_id}/{tahapan_id}/selesaikan', [SiswaTahapanController::class, 'selesaikan'])->name('tahapan.selesaikan');
+            Route::post('/tahapan/{ruang_belajar_id}/{tahapan_id}/jawaban-apersepsi',[SiswaTahapanController::class, 'simpanJawabanApersepsi'])->name('tahapan.apersepsi.jawab');
             // Route Eksplorasi Ruang Belajar
             Route::get('/eksplorasi', [SiswaRuangbelajarController::class, 'eksplorasi'])->name('eksplorasi');
             
@@ -143,7 +146,7 @@ Route::middleware('auth')->group(function () {
             Route::get('/hasil/{hasil_id}', [SiswaUjianController::class, 'hasil'])->name('hasil');
             Route::get('/kerjakan/{hasil_id}', [SiswaUjianController::class, 'kerjakan'])->name('kerjakan');
             Route::post('/selesaikan/{hasil_id}', [SiswaUjianController::class, 'selesaikan'])->name('selesaikan');
-            Route::post('/ujian/mulai-tahapan/{ruang_ujian_id}/{tahapan_id}',[UjianController::class, 'mulaiDariTahapan'])->name('ujian.mulai-tahapan');
+            Route::post('/ujian/mulai-tahapan/{ruang_ujian_id}/{tahapan_id}',[SiswaUjianController::class, 'mulaiDariTahapan'])->name('ujian.mulai-tahapan');
 
         });
 
@@ -156,6 +159,8 @@ Route::middleware('auth')->group(function () {
 
         /* Dashboard Guru */
         Route::get('/dashboard', [GuruDashboardController::class, 'index'])->name('dashboard');
+        Route::get('/leaderboard', [GuruLeaderboardController::class, 'index'])
+            ->name('leaderboard.index');
 
         /* Ruang Belajar Guru */
         Route::prefix('ruang-belajar')->name('ruang-belajar.')->group(function () {
@@ -180,6 +185,7 @@ Route::middleware('auth')->group(function () {
             Route::get('/{ruang_belajar}/tahapan/{tahapan}/konten', [GuruTahapanKontenController::class, 'create'])->name('tahapan.konten.edit');
             Route::post('/{ruang_belajar}/tahapan/{tahapan}/konten', [GuruTahapanKontenController::class, 'store'])->name('tahapan.konten.store');
             Route::get('/{ruang_belajar}/tahapan/{tahapan}/konten/edit', [GuruTahapanKontenController::class, 'edit'])->name('tahapan.konten.edit');
+            Route::post('/{ruang_belajar_id}/tahapan/{tahapan_id}/upload-gambar',[GuruTahapanKontenController::class, 'uploadGambar'])->name('tahapan.upload-gambar');
             
             Route::put('/{ruang_belajar}/tahapan/{tahapan}/konten', [GuruTahapanKontenController::class, 'update'])->name('tahapan.konten.update');
 

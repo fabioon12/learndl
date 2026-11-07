@@ -68,7 +68,7 @@
 
         </div>
 
-        <a href="{{ route('guru.ruang-belajar.tahapan.konten.index', $ruangBelajar->id) }}"
+        <a href="{{ route('guru.ruang-belajar.tahapan.index', $ruangBelajar->id) }}"
            class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm font-semibold transition">
 
             <i class="fa-solid fa-arrow-left"></i>
@@ -410,7 +410,7 @@
         {{-- ACTION BUTTON --}}
         <div class="flex flex-col-reverse sm:flex-row items-center justify-between gap-3">
 
-            <a href="{{ route('guru.ruang-belajar.tahapan.konten.index', $ruangBelajar->id) }}"
+            <a href="{{ route('guru.ruang-belajar.index', $ruangBelajar->id) }}"
                class="w-full sm:w-auto px-5 py-3 rounded-xl text-sm font-semibold text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition text-center">
 
                 Batal

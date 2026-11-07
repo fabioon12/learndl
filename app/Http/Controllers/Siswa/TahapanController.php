@@ -18,50 +18,102 @@ class TahapanController extends Controller
     {
         $userId = Auth::id();
 
-        // Ambil ruang belajar beserta tahapan dan progres siswa
+        // Ambil ruang belajar, tahapan, progres siswa, dan submateri yang diterbitkan.
         $ruangBelajar = RuangBelajar::with([
             'tahapans' => function ($query) use ($userId) {
                 $query->orderBy('urutan', 'asc')
+                    ->orderBy('id', 'asc')
                     ->with([
                         'userProgress' => function ($q) use ($userId) {
                             $q->where('user_id', $userId);
-                        }
+                        },
+                        'ruangMateri.submateris' => function ($q) {
+                            $q->where('status', 'terbit')
+                                ->orderBy('urutan')
+                                ->orderBy('id');
+                        },
                     ]);
-            }
+            },
         ])->findOrFail($id);
 
         $sudahTerdaftar = $ruangBelajar->siswa()
             ->where('users.id', $userId)
             ->exists();
 
-        if (!$sudahTerdaftar) {
-            abort(403, 'Anda belum terdaftar di ruang belajar ini.');
-        }
+        abort_unless($sudahTerdaftar, 403, 'Anda belum terdaftar di ruang belajar ini.');
 
         $tahapans = $ruangBelajar->tahapans;
 
-        $adaTahapanSebelumnyaBelumSelesai = false;
+        // Ambil ID submateri unik agar materi yang dipakai berulang tidak dihitung dua kali.
+        $submateris = $tahapans
+            ->filter(fn ($tahapan) => $tahapan->tipe === 'materi' && $tahapan->ruangMateri)
+            ->flatMap(fn ($tahapan) => $tahapan->ruangMateri->submateris)
+            ->unique('id')
+            ->values();
 
+        $submateriIds = $submateris->pluck('id');
+
+        $progressSubmateri = $submateriIds->isEmpty()
+            ? collect()
+            : SubmateriProgress::query()
+                ->where('user_id', $userId)
+                ->whereIn('submateri_id', $submateriIds)
+                ->whereNotNull('completed_at')
+                ->get()
+                ->keyBy('submateri_id');
+
+        // Sinkronkan tahapan Materi yang seluruh misinya sudah selesai.
+        // Tidak menambah EXP tahapan karena EXP misi tersimpan di SubmateriProgress.
         foreach ($tahapans as $tahapan) {
+            if ($tahapan->tipe !== 'materi' || !$tahapan->ruangMateri) {
+                continue;
+            }
+
+            $idsMateri = $tahapan->ruangMateri->submateris->pluck('id');
+            if ($idsMateri->isEmpty()) {
+                continue;
+            }
+
+            $semuaMisiSelesai = $idsMateri->every(
+                fn ($submateriId) => $progressSubmateri->has($submateriId)
+            );
+
+            if (!$semuaMisiSelesai) {
+                continue;
+            }
 
             $progress = $tahapan->userProgress->first();
+            if ($progress?->status === 'selesai') {
+                continue;
+            }
 
-            $statusProgress = $progress?->status;
+            $progress = TahapanUser::updateOrCreate(
+                [
+                    'user_id' => $userId,
+                    'tahapan_id' => $tahapan->id,
+                ],
+                [
+                    'status' => 'selesai',
+                    'completed_at' => now(),
+                    'exp_didapat' => 0,
+                ]
+            );
 
-            if ($statusProgress === 'selesai') {
+            // Perbarui relasi yang telah dimuat agar status tampilan langsung sesuai.
+            $tahapan->setRelation('userProgress', collect([$progress]));
+        }
 
+        // Tentukan tahapan aktif dan terkunci secara berurutan.
+        $adaTahapanSebelumnyaBelumSelesai = false;
+        foreach ($tahapans as $tahapan) {
+            $progress = $tahapan->userProgress->first();
+
+            if ($progress?->status === 'selesai') {
                 $statusTampilan = 'selesai';
-
             } elseif (!$adaTahapanSebelumnyaBelumSelesai) {
-
-                // Tahapan pertama yang belum selesai menjadi aktif
                 $statusTampilan = 'aktif';
-
                 $adaTahapanSebelumnyaBelumSelesai = true;
-
             } else {
-
-                // Tahapan selanjutnya terkunci
                 $statusTampilan = 'terkunci';
             }
 
@@ -69,130 +121,142 @@ class TahapanController extends Controller
         }
 
         $totalTahapan = $tahapans->count();
+        $tahapanSelesai = $tahapans->filter(
+            fn ($tahapan) => $tahapan->userProgress->first()?->status === 'selesai'
+        )->count();
 
-        $tahapanSelesai = $tahapans->filter(function ($tahapan) {
-            return $tahapan->userProgress->first()?->status === 'selesai';
-        })->count();
-
-        // Persentase progres
         $progressPersen = $totalTahapan > 0
             ? round(($tahapanSelesai / $totalTahapan) * 100)
             : 0;
 
-        $totalExp = $tahapans->sum(function ($tahapan) {
-            return (int) ($tahapan->xp_reward ?? 0);
-        });
+        // EXP dari tahapan biasa (termasuk ujian), tidak dari tahapan Materi.
+        $tahapanBiasa = $tahapans->reject(fn ($tahapan) => $tahapan->tipe === 'materi');
 
-
-        $expDiperoleh = $tahapans->sum(function ($tahapan) {
-            return (int) ($tahapan->userProgress->first()?->exp_didapat ?? 0);
-        });
-
-        $tahapanTersisa = $totalTahapan - $tahapanSelesai;
-
-        $semuaTahapanSelesai = $totalTahapan > 0
-            && $tahapanSelesai === $totalTahapan;
-
-        return view('siswa.ruang-belajar.tahapan.index',
-            compact(
-                'ruangBelajar',
-                'tahapans',
-                'totalTahapan',
-                'tahapanSelesai',
-                'tahapanTersisa',
-                'progressPersen',
-                'totalExp',
-                'expDiperoleh',
-                'semuaTahapanSelesai'
-            )
+        $totalExpTahapan = (int) $tahapanBiasa->sum(
+            fn ($tahapan) => max(0, (int) ($tahapan->xp_reward ?? 0))
         );
+
+        $expDiperolehTahapan = (int) $tahapanBiasa->sum(function ($tahapan) {
+            $progress = $tahapan->userProgress->first();
+            return $progress?->status === 'selesai'
+                ? max(0, (int) ($progress->exp_didapat ?? 0))
+                : 0;
+        });
+
+        // EXP dari seluruh submateri terbit yang digunakan ruang belajar ini.
+        $totalExpMateri = (int) $submateris->sum(
+            fn ($submateri) => max(0, (int) ($submateri->xp_reward ?? 0))
+        );
+
+        $expDiperolehMateri = (int) $progressSubmateri->sum(
+            fn ($progress) => max(0, (int) ($progress->xp_earned ?? 0))
+        );
+
+        $totalExp = $totalExpTahapan + $totalExpMateri;
+        $expDiperoleh = $expDiperolehTahapan + $expDiperolehMateri;
+
+        $tahapanTersisa = max(0, $totalTahapan - $tahapanSelesai);
+        $semuaTahapanSelesai = $totalTahapan > 0 && $tahapanSelesai === $totalTahapan;
+
+        return view('siswa.ruang-belajar.tahapan.index', compact(
+            'ruangBelajar',
+            'tahapans',
+            'totalTahapan',
+            'tahapanSelesai',
+            'tahapanTersisa',
+            'progressPersen',
+            'totalExp',
+            'expDiperoleh',
+            'totalExpTahapan',
+            'expDiperolehTahapan',
+            'totalExpMateri',
+            'expDiperolehMateri',
+            'semuaTahapanSelesai'
+        ));
     }
+
 
     public function show($ruang_belajar_id, $tahapan_id)
     {
         $userId = Auth::id();
-
-        // ==========================================
-        // AMBIL RUANG BELAJAR DAN TAHAPAN
-        // ==========================================
+        abort_unless($userId, 401);
 
         $ruangBelajar = RuangBelajar::with([
             'tahapans' => function ($query) use ($userId) {
-                $query->orderBy('urutan', 'asc')
-                    ->with([
-                        'userProgress' => function ($q) use ($userId) {
-                            $q->where('user_id', $userId);
-                        }
-                    ]);
-            }
+                $query->orderBy('urutan')->orderBy('id')
+                    ->with(['userProgress' => function ($progressQuery) use ($userId) {
+                        $progressQuery->where('user_id', $userId);
+                    }]);
+            },
         ])->findOrFail($ruang_belajar_id);
 
-        // Pastikan siswa sudah terdaftar
-        $sudahTerdaftar = $ruangBelajar->siswa()
-            ->where('users.id', $userId)
-            ->exists();
-
-        abort_unless($sudahTerdaftar, 403);
+        abort_unless(
+            $ruangBelajar->siswa()->where('users.id', $userId)->exists(),
+            403,
+            'Anda belum terdaftar di ruang belajar ini.'
+        );
 
         $tahapans = $ruangBelajar->tahapans;
-
-        // Cari tahapan yang sedang dibuka
         $tahapan = $tahapans->firstWhere('id', (int) $tahapan_id);
+        abort_if(!$tahapan, 404, 'Tahapan tidak ditemukan.');
 
-        abort_if(!$tahapan, 404);
-
-        // ==========================================
-        // PEMERIKSAAN AKSES TAHAPAN
-        // ==========================================
-
-        // Cari tahapan pertama yang belum selesai
         $tahapanAktif = $tahapans->first(function ($item) {
             return $item->userProgress->first()?->status !== 'selesai';
         });
 
         $progress = $tahapan->userProgress->first();
-
         $bolehDiakses = $progress?->status === 'selesai'
-            || ($tahapanAktif && $tahapanAktif->id === $tahapan->id);
+            || ($tahapanAktif && (int) $tahapanAktif->id === (int) $tahapan->id);
 
-        abort_unless(
-            $bolehDiakses,
-            403,
-            'Selesaikan tahapan sebelumnya terlebih dahulu.'
-        );
+        abort_unless($bolehDiakses, 403, 'Selesaikan tahapan sebelumnya terlebih dahulu.');
 
-        // ==========================================
-        // PENANGANAN PRE-TEST DAN POST-TEST
-        // ==========================================
+        // PRE-TEST / POST-TEST
 
-        if (in_array($tahapan->tipe, ['pre_test', 'post_test'])) {
+if (in_array($tahapan->tipe, ['pre_test', 'post_test'], true)) {
 
-            // Ambil Ruang Ujian yang sudah dipilih guru
-            $ruangUjian = $tahapan->ruangUjian()
-                ->with(['guru', 'soal'])
+    // Ambil ujian yang dipilih guru pada tahapan ini
+    $ruangUjian = $tahapan->ruangUjian()
+        ->with(['guru', 'soal'])
+        ->first();
+
+    abort_if(
+        !$ruangUjian,
+        404,
+        'Guru belum memilih Ruang Ujian untuk tahapan ini.'
+    );
+
+    abort_if(
+        $ruangUjian->status !== 'aktif',
+        403,
+        'Ruang Ujian yang dipilih belum aktif.'
+    );
+
+    abort_if(
+        $ruangUjian->soal->isEmpty(),
+        403,
+        'Ruang Ujian belum memiliki soal.'
+    );
+
+    // Cari hasil ujian yang terkait dengan tahapan ini
+    $hasilUjian = HasilUjian::where('user_id', $userId)
+        ->where('ruang_ujian_id', $ruangUjian->id)
+        ->where('tahapan_id', $tahapan->id)
+        ->first();
+
+    // Jika selesai, sinkronkan progres tahapan
+    if ($hasilUjian && $hasilUjian->status === 'selesai') {
+
+        DB::transaction(function () use (
+            $userId,
+            $tahapan,
+            $hasilUjian
+        ) {
+            $progress = TahapanUser::where('user_id', $userId)
+                ->where('tahapan_id', $tahapan->id)
+                ->lockForUpdate()
                 ->first();
 
-            // Pastikan Ruang Ujian sudah dipilih
-            abort_if(
-                !$ruangUjian,
-                404,
-                'Ruang Ujian untuk tahapan ini belum dikonfigurasi oleh guru.'
-            );
-
-            // Pastikan ujian aktif dan memiliki soal
-            abort_if(
-                $ruangUjian->status !== 'aktif' || $ruangUjian->soal->isEmpty(),
-                403,
-                'Ruang Ujian belum aktif atau belum memiliki soal.'
-            );
-
-            // Cari hasil ujian siswa
-            $hasilUjian = HasilUjian::where('user_id', $userId)
-                ->where('ruang_ujian_id', $ruangUjian->id)
-                ->first();
-
-            // Jika ujian sudah selesai
-            if ($hasilUjian && $hasilUjian->status === 'selesai') {
+            if (!$progress || $progress->status !== 'selesai') {
 
                 TahapanUser::updateOrCreate(
                     [
@@ -201,183 +265,222 @@ class TahapanController extends Controller
                     ],
                     [
                         'status' => 'selesai',
-                        'exp_didapat' => (int) $hasilUjian->exp_diperoleh,
-                        'completed_at' => $hasilUjian->finished_at ?? now(),
+                        'exp_didapat' =>
+                            (int) ($hasilUjian->exp_diperoleh ?? 0),
+                        'jawaban' => [
+                            'hasil_ujian_id' => $hasilUjian->id,
+                            'nilai' => $hasilUjian->nilai,
+                            'jumlah_benar' => $hasilUjian->jumlah_benar,
+                            'jumlah_salah' => $hasilUjian->jumlah_salah,
+                        ],
+                        'completed_at' =>
+                            $hasilUjian->finished_at ?? now(),
                     ]
                 );
-
-                return redirect()->route('siswa.ujian.hasil', [
-                    'hasil_id' => $hasilUjian->id,
-                ]);
             }
+        });
+    }
 
-            // Jika ujian sudah dimulai tetapi belum selesai
-            if ($hasilUjian && $hasilUjian->status === 'berlangsung') {
-
-                return redirect()->route('siswa.ujian.kerjakan', [
-                    'hasil_id' => $hasilUjian->id,
-                ]);
-            }
-
-            // Jika belum pernah mengerjakan
-            return view(
-                'siswa.ruang-belajar.tahapan.konten.ujian',
-                compact(
-                    'ruangBelajar',
-                    'tahapan',
-                    'ruangUjian',
-                    'hasilUjian'
-                )
-            );
-        }
-
-        // ==========================================
-        // PENANGANAN TAHAPAN MATERI
-        // ==========================================
-
+    // Selalu masuk ke halaman detail terlebih dahulu
+    return redirect()->route('siswa.ujian.detail', [
+        'ruang_ujian_id' => $ruangUjian->id,
+        'tahapan_id' => $tahapan->id,
+        'ruang_belajar_id' => $ruangBelajar->id,
+    ]);
+}
+        // RUANG MATERI: tampilkan dashboard materi yang ditautkan guru.
         if ($tahapan->tipe === 'materi') {
-
             $user = Auth::user();
 
-            // Ambil Ruang Materi yang terhubung dengan tahapan
             $tahapan->load([
-                'ruangMateri.subMateris' => function ($query) {
+                'ruangMateri.submateris' => function ($query) {
+                    // Hanya materi terbit yang dapat dipelajari siswa.
                     $query->where('status', 'terbit')
-                        ->orderBy('urutan', 'asc');
-                }
+                        ->orderBy('urutan')
+                        ->orderBy('id');
+                },
             ]);
 
             $ruangMateri = $tahapan->ruangMateri;
+            abort_if(!$ruangMateri, 404, 'Ruang Materi belum dipilih oleh guru.');
 
-            abort_if(
-                !$ruangMateri,
-                404,
-                'Materi untuk tahapan ini belum dikonfigurasi oleh guru.'
-            );
-
-            // Jadikan satu materi sebagai collection
+            // Model Materi mendefinisikan relasi submateris() (huruf s kecil).
+            // Blade memerlukan kumpulan Materi, bukan kumpulan Submateri.
             $materis = collect([$ruangMateri]);
+            $submateris = $ruangMateri->submateris;
+            $submateriIds = $submateris->pluck('id');
 
-            // Ambil seluruh ID submateri
-            $submateriIds = $ruangMateri->subMateris->pluck('id');
+            $progressSubmateri = $submateriIds->isEmpty()
+                ? collect()
+                : SubmateriProgress::query()
+                    ->where('user_id', $userId)
+                    ->whereIn('submateri_id', $submateriIds)
+                    ->get()
+                    ->keyBy('submateri_id');
 
-            // Ambil progres siswa
-            $progressSubmateri = SubmateriProgress::where('user_id', $userId)
-                ->whereIn('submateri_id', $submateriIds)
-                ->get()
-                ->keyBy('submateri_id');
+            $progressSelesai = $progressSubmateri->filter(function ($item) {
+                return $item->completed_at !== null;
+            });
 
-            // Ambil ID submateri yang sudah selesai
-            $completedIds = $progressSubmateri
-                ->filter(function ($progress) {
-                    return !is_null($progress->completed_at);
-                })
-                ->keys()
-                ->toArray();
-
-            // Total XP global siswa
-            $totalXp = $user->totalXp();
-
-            // Level siswa
-            $level = (int) floor($totalXp / 100) + 1;
-
-            $xpInLevel = $totalXp % 100;
-            $xpNeeded = 100;
-            $xpPercentage = ($xpInLevel / $xpNeeded) * 100;
-
-            // Statistik khusus materi ini
-            $totalSubmateri = $ruangMateri->subMateris->count();
-            $totalCompleted = count($completedIds);
-
+            $completedIds = $progressSelesai->keys()->all();
+            $totalSubmateri = $submateris->count();
+            $totalCompleted = $progressSelesai->count();
+            $jumlahSelesai = $totalCompleted;
             $overallProgress = $totalSubmateri > 0
                 ? round(($totalCompleted / $totalSubmateri) * 100)
                 : 0;
 
-            // XP khusus materi ini
-            $totalXP = (int) $ruangMateri->subMateris->sum('xp_reward');
+            // Sinkronkan status tahapan ketika seluruh submateri terbit selesai.
+            // Jangan menambahkan XP lagi: XP sudah tersimpan per submateri.
+            if ($totalSubmateri > 0 && $totalCompleted >= $totalSubmateri) {
+                DB::transaction(function () use ($userId, $tahapan) {
+                    $progresTahapan = TahapanUser::query()
+                        ->where('user_id', $userId)
+                        ->where('tahapan_id', $tahapan->id)
+                        ->lockForUpdate()
+                        ->first();
 
-            $xpDiperoleh = (int) $progressSubmateri
-                ->filter(function ($progress) {
-                    return !is_null($progress->completed_at);
-                })
-                ->sum('xp_earned');
+                    if (!$progresTahapan || $progresTahapan->status !== 'selesai') {
+                        TahapanUser::updateOrCreate(
+                            ['user_id' => $userId, 'tahapan_id' => $tahapan->id],
+                            [
+                                'status' => 'selesai',
+                                'exp_didapat' => 0,
+                                'completed_at' => now(),
+                            ]
+                        );
+                    }
+                });
+            }
 
-            $jumlahSelesai = $totalCompleted;
+            // Total XP yang tersedia berasal dari reward setiap submateri.
+            $totalXP = (int) $submateris->sum(function ($submateri) {
+                return (int) ($submateri->xp_reward ?? 0);
+            });
 
-            return view(
-                'siswa.aktivitas-materi.dashboard.index',
-                compact(
-                    'user',
-                    'ruangBelajar',
-                    'tahapan',
-                    'ruangMateri',
-                    'materis',
-                    'progressSubmateri',
-                    'completedIds',
-                    'totalXp',
-                    'level',
-                    'xpInLevel',
-                    'xpNeeded',
-                    'xpPercentage',
-                    'totalSubmateri',
-                    'totalCompleted',
-                    'overallProgress',
-                    'totalXP',
-                    'xpDiperoleh',
-                    'jumlahSelesai'
-                )
-            );
+            // Total XP yang sudah diperoleh siswa
+            $xpDiperoleh = (int) $progressSelesai->sum(function ($item) {
+                return (int) ($item->xp_earned ?? 0);
+            });
+
+            // XP yang diperoleh dari misi yang selesai
+            $xpMisiSelesai = $xpDiperoleh;
+
+            // Variabel tambahan untuk widget XP pada dashboard materi.
+            $xpTersisa = max(0, $totalXP - $xpDiperoleh);
+            $xpProgressPercentage = $totalXP > 0
+                ? round(min(100, ($xpDiperoleh / $totalXP) * 100), 1)
+                : 0;
+
+            // Level global: 1000 XP per level.
+            $totalXp = max(0, (int) $user->totalXp());
+            $xpPerLevel = 1000;
+            $level = intdiv($totalXp, $xpPerLevel) + 1;
+            $xpInLevel = $totalXp % $xpPerLevel;
+            $xpNeeded = $xpPerLevel;
+            $xpPercentage = round(($xpInLevel / $xpNeeded) * 100, 1);
+
+            return view('siswa.aktivitas-materi.dashboard.index', compact(
+                'user', 'ruangBelajar', 'tahapan', 'ruangMateri', 'materis',
+                'progressSubmateri', 'completedIds', 'totalXp', 'level',
+                'xpInLevel', 'xpNeeded', 'xpPercentage', 'totalSubmateri',
+                'totalCompleted', 'overallProgress', 'totalXP', 'xpDiperoleh',
+                'jumlahSelesai', 'xpMisiSelesai', 'xpTersisa', 'xpProgressPercentage'
+            ));
         }
 
-        // ==========================================
-        // PENANGANAN TIPE TAHAPAN LAINNYA
-        // ==========================================
-
         $konten = $tahapan->konten ?? [];
-
         if (is_string($konten)) {
-            $konten = json_decode($konten, true) ?? [];
+            $konten = json_decode($konten, true) ?: [];
+        }
+        if (!is_array($konten)) {
+            $konten = [];
         }
 
         $view = match ($tahapan->tipe) {
-
-            'jeda_hening',
-            'jeda_hening_checkin',
-            'checkin' => 'siswa.ruang-belajar.tahapan.konten.jeda-hening',
-
+            'jeda_hening', 'jeda_hening_checkin', 'checkin'
+                => 'siswa.ruang-belajar.tahapan.konten.jeda-hening',
             'apersepsi' => 'siswa.ruang-belajar.tahapan.konten.apersepsi',
-
             'ice_breaking' => 'siswa.ruang-belajar.tahapan.konten.ice-breaking',
-
-            default => abort(404, 'Tipe tahapan tidak ditemukan.')
+            default => abort(404, 'Tipe tahapan tidak ditemukan.'),
         };
 
-        // Hilangkan kunci jawaban dari aktivitas susun kode
+        $jawabanSaya = '';
+        $jawabanTeman = collect();
+        $jumlahJawaban = 0;
+        $forumAktif = false;
+
+        if ($tahapan->tipe === 'apersepsi') {
+            $forumAktif = filter_var(
+                data_get($konten, 'forum.aktif', false),
+                FILTER_VALIDATE_BOOLEAN
+            );
+
+            $jawabanTersimpan = $progress?->jawaban ?? [];
+            if (is_string($jawabanTersimpan)) {
+                $jawabanTersimpan = json_decode($jawabanTersimpan, true) ?: [];
+            }
+            if (!is_array($jawabanTersimpan)) {
+                $jawabanTersimpan = [];
+            }
+
+            $jawabanSaya = trim((string) (
+                data_get($jawabanTersimpan, 'forum')
+                ?? data_get($jawabanTersimpan, 'jawaban.forum')
+                ?? ''
+            ));
+
+            if ($forumAktif && $jawabanSaya !== '') {
+                // Ambil ID siswa terdaftar melalui relasi RuangBelajar::siswa().
+                $siswaIds = $ruangBelajar->siswa()->pluck('users.id');
+
+                $jawabanValid = TahapanUser::query()
+                    ->with('user')
+                    ->where('tahapan_id', $tahapan->id)
+                    ->whereIn('user_id', $siswaIds)
+                    ->whereNotNull('jawaban')
+                    ->orderByDesc('updated_at')
+                    ->get()
+                    ->filter(function ($item) {
+                        $data = $item->jawaban;
+                        if (is_string($data)) {
+                            $data = json_decode($data, true) ?: [];
+                        }
+                        return trim((string) (
+                            data_get($data, 'forum')
+                            ?? data_get($data, 'jawaban.forum')
+                            ?? ''
+                        )) !== '';
+                    });
+
+                $jumlahJawaban = $jawabanValid->count();
+                $jawabanTeman = $jawabanValid
+                    ->reject(fn ($item) => (int) $item->user_id === (int) $userId)
+                    ->values();
+            }
+        }
+
+        // Jangan kirim kunci jawaban permainan susun kode ke Blade.
         if ($tahapan->tipe === 'ice_breaking') {
-
-            foreach ($konten['aktivitas'] ?? [] as &$aktivitas) {
-
+            foreach ($konten['aktivitas'] ?? [] as $index => $aktivitas) {
                 if (($aktivitas['tipe'] ?? null) === 'susun_kode') {
-
                     unset(
-                        $aktivitas['konfigurasi']['urutan_benar'],
-                        $aktivitas['konfigurasi']['urutan_benar_text']
+                        $konten['aktivitas'][$index]['konfigurasi']['urutan_benar'],
+                        $konten['aktivitas'][$index]['konfigurasi']['urutan_benar_text']
                     );
                 }
             }
-
-            unset($aktivitas);
         }
 
-        return view(
-            $view,
-            compact(
-                'ruangBelajar',
-                'tahapan',
-                'konten'
-            )
-        );
+        // View tahapan non-materi hanya membutuhkan variabel yang tersedia
+        // di semua cabang, bukan statistik khusus dashboard materi.
+        return view($view, compact(
+            'ruangBelajar', 'tahapan', 'konten',
+            'jawabanSaya', 'jawabanTeman', 'jumlahJawaban', 'forumAktif'
+        ));
     }
+
+
     public function selesaikan(Request $request, $ruang_belajar_id, $tahapan_id)
     {
         $userId = Auth::id();
@@ -425,96 +528,84 @@ class TahapanController extends Controller
         // 3. PENANGANAN PRE-TEST DAN POST-TEST
         // ==========================================
 
-        if (in_array($tahapan->tipe, ['pre_test', 'post_test'])) {
 
-            // Ambil Ruang Ujian yang sudah dipilih guru
-            $ruangUjian = $tahapan->ruangUjian()
-                ->where('status', 'aktif')
-                ->first();
+if (in_array($tahapan->tipe, ['pre_test', 'post_test'], true)) {
 
-            if (!$ruangUjian) {
-                return back()->with(
-                    'error',
-                    'Ruang Ujian belum dipilih atau belum aktif.'
-                );
-            }
+    $ruangUjian = $tahapan->ruangUjian()
+        ->where('status', 'aktif')
+        ->first();
 
-            // Cari hasil ujian siswa
-            $hasilUjian = HasilUjian::where('user_id', $userId)
-                ->where('ruang_ujian_id', $ruangUjian->id)
-                ->first();
+    if (!$ruangUjian) {
+        return back()->with(
+            'error',
+            'Ruang Ujian belum dipilih atau belum aktif.'
+        );
+    }
 
-            if (!$hasilUjian) {
-                return back()->with(
-                    'error',
-                    'Anda belum mengerjakan ujian ini.'
-                );
-            }
+    $hasilUjian = HasilUjian::where('user_id', $userId)
+        ->where('ruang_ujian_id', $ruangUjian->id)
+        ->where('tahapan_id', $tahapan->id)
+        ->where('status', 'selesai')
+        ->first();
 
-            // Ujian harus benar-benar selesai
-            if ($hasilUjian->status !== 'selesai') {
-                return back()->with(
-                    'error',
-                    'Selesaikan ujian terlebih dahulu.'
-                );
-            }
+    if (!$hasilUjian) {
+        return redirect()->route('siswa.ujian.detail', [
+            'ruang_ujian_id' => $ruangUjian->id,
+            'tahapan_id' => $tahapan->id,
+            'ruang_belajar_id' => $ruang_belajar_id,
+        ])->with(
+            'error',
+            'Selesaikan ujian terlebih dahulu.'
+        );
+    }
 
-            // Pastikan hasil ujian memang terkait dengan tahapan ini
-            if ((int) $hasilUjian->tahapan_id !== (int) $tahapan->id) {
-                return back()->with(
-                    'error',
-                    'Hasil ujian tidak sesuai dengan tahapan ini.'
-                );
-            }
+    $expDidapat = (int) ($hasilUjian->exp_diperoleh ?? 0);
 
-            $expDidapat = (int) $hasilUjian->exp_diperoleh;
+    DB::transaction(function () use (
+        $userId,
+        $tahapan,
+        $hasilUjian,
+        $expDidapat
+    ) {
+        $progress = TahapanUser::where('user_id', $userId)
+            ->where('tahapan_id', $tahapan->id)
+            ->lockForUpdate()
+            ->first();
 
-            // Sinkronkan progres tahapan dengan hasil ujian
-            DB::transaction(function () use (
-                $userId,
-                $tahapan,
-                $hasilUjian,
-                $expDidapat
-            ) {
-
-                $progress = TahapanUser::where('user_id', $userId)
-                    ->where('tahapan_id', $tahapan->id)
-                    ->lockForUpdate()
-                    ->first();
-
-                // Jangan berikan EXP dua kali
-                if ($progress && $progress->status === 'selesai') {
-                    return;
-                }
-
-                TahapanUser::updateOrCreate(
-                    [
-                        'user_id' => $userId,
-                        'tahapan_id' => $tahapan->id,
-                    ],
-                    [
-                        'status' => 'selesai',
-                        'exp_didapat' => $expDidapat,
-                        'jawaban' => [
-                            'hasil_ujian_id' => $hasilUjian->id,
-                            'nilai' => $hasilUjian->nilai,
-                            'jumlah_benar' => $hasilUjian->jumlah_benar,
-                            'jumlah_salah' => $hasilUjian->jumlah_salah,
-                        ],
-                        'completed_at' => $hasilUjian->finished_at ?? now(),
-                    ]
-                );
-            });
-
-            return redirect()
-                ->route('siswa.ruang-belajar.tahapan', [
-                    'id' => $ruang_belajar_id,
-                ])
-                ->with(
-                    'success',
-                    "Ujian berhasil diselesaikan! Kamu mendapatkan {$expDidapat} EXP."
-                );
+        if ($progress && $progress->status === 'selesai') {
+            return;
         }
+
+        TahapanUser::updateOrCreate(
+            [
+                'user_id' => $userId,
+                'tahapan_id' => $tahapan->id,
+            ],
+            [
+                'status' => 'selesai',
+                'exp_didapat' => $expDidapat,
+                'jawaban' => [
+                    'hasil_ujian_id' => $hasilUjian->id,
+                    'nilai' => $hasilUjian->nilai,
+                    'jumlah_benar' => $hasilUjian->jumlah_benar,
+                    'jumlah_salah' => $hasilUjian->jumlah_salah,
+                ],
+                'completed_at' =>
+                    $hasilUjian->finished_at ?? now(),
+            ]
+        );
+    });
+
+    return redirect()
+        ->route('siswa.ruang-belajar.tahapan', [
+            'id' => $ruang_belajar_id,
+        ])
+        ->with(
+            'success',
+            "Tahapan ujian selesai! Kamu memperoleh {$expDidapat} EXP."
+        );
+}
+
 
         // ==========================================
         // 4. VALIDASI INPUT TAHAPAN BIASA
@@ -537,6 +628,36 @@ class TahapanController extends Controller
 
         if (is_string($konten)) {
             $konten = json_decode($konten, true) ?? [];
+        }
+
+        // ==========================================
+        // 4A. VALIDASI APERSEPSI INTERAKTIF
+        // ==========================================
+        // Jawaban forum dikirim lebih dahulu melalui simpanJawabanApersepsi().
+        // Penyelesaian hanya diizinkan jika jawaban sudah tersimpan.
+        if ($tahapan->tipe === 'apersepsi') {
+            $forumAktif = filter_var(
+                data_get($konten, 'forum.aktif', false),
+                FILTER_VALIDATE_BOOLEAN
+            );
+
+            if ($forumAktif) {
+                $progressApersepsi = TahapanUser::where('user_id', $userId)
+                    ->where('tahapan_id', $tahapan->id)
+                    ->first();
+
+                $jawabanTersimpan = $progressApersepsi?->jawaban ?? [];
+                if (is_string($jawabanTersimpan)) {
+                    $jawabanTersimpan = json_decode($jawabanTersimpan, true) ?: [];
+                }
+
+                if (!is_array($jawabanTersimpan) ||
+                    trim((string) data_get($jawabanTersimpan, 'forum', '')) === '') {
+                    return back()->with('error',
+                        'Kirim jawaban pertanyaan pemantik terlebih dahulu sebelum menyelesaikan apersepsi.'
+                    );
+                }
+            }
         }
 
         // ==========================================
@@ -644,32 +765,63 @@ class TahapanController extends Controller
         // 7. SIMPAN JAWABAN DAN PROGRES SISWA
         // ==========================================
 
-        $jawabanSiswa = [
-            'jawaban' => $validated['jawaban'] ?? [],
-            'selesai' => $validated['selesai'] ?? [],
-            'check_in_jawaban' => $validated['check_in_jawaban'] ?? null,
-        ];
-
         $expDidapat = 0;
+        $sudahSelesai = false;
+        $forumBelumDijawab = false;
 
         DB::transaction(function () use (
             $userId,
             $tahapan,
-            $jawabanSiswa,
-            &$expDidapat
+            $validated,
+            $konten,
+            &$expDidapat,
+            &$sudahSelesai,
+            &$forumBelumDijawab
         ) {
-
             $progress = TahapanUser::where('user_id', $userId)
                 ->where('tahapan_id', $tahapan->id)
                 ->lockForUpdate()
                 ->first();
 
-            // Cegah pemberian EXP berulang
+            // Mencegah penyelesaian dan pemberian EXP berulang.
             if ($progress && $progress->status === 'selesai') {
+                $sudahSelesai = true;
                 return;
             }
 
-            $expDidapat = (int) ($tahapan->xp_reward ?? 0);
+            // Ambil jawaban lama agar jawaban forum tidak tertimpa.
+            $jawabanLama = $progress?->jawaban ?? [];
+            if (is_string($jawabanLama)) {
+                $jawabanLama = json_decode($jawabanLama, true) ?: [];
+            }
+            if (!is_array($jawabanLama)) {
+                $jawabanLama = [];
+            }
+
+            if ($tahapan->tipe === 'apersepsi') {
+                $forumAktif = filter_var(
+                    data_get($konten, 'forum.aktif', false),
+                    FILTER_VALIDATE_BOOLEAN
+                );
+
+                // Periksa ulang setelah lock agar tidak terjadi race condition.
+                if ($forumAktif && trim((string) data_get($jawabanLama, 'forum', '')) === '') {
+                    $forumBelumDijawab = true;
+                    return;
+                }
+
+                // Untuk apersepsi, simpan jawaban lama apa adanya.
+                $jawabanSiswa = $jawabanLama;
+            } else {
+                // Pertahankan data lain dan perbarui field aktivitas biasa.
+                $jawabanSiswa = array_merge($jawabanLama, [
+                    'jawaban' => $validated['jawaban'] ?? [],
+                    'selesai' => $validated['selesai'] ?? [],
+                    'check_in_jawaban' => $validated['check_in_jawaban'] ?? null,
+                ]);
+            }
+
+            $expDidapat = max(0, (int) ($tahapan->xp_reward ?? 0));
 
             TahapanUser::updateOrCreate(
                 [
@@ -685,6 +837,18 @@ class TahapanController extends Controller
             );
         });
 
+        if ($forumBelumDijawab) {
+            return back()->with('error',
+                'Jawaban pertanyaan pemantik belum tersimpan. Silakan kirim jawaban terlebih dahulu.'
+            );
+        }
+
+        if ($sudahSelesai) {
+            return redirect()
+                ->route('siswa.ruang-belajar.tahapan', ['id' => $ruang_belajar_id])
+                ->with('success', 'Tahapan ini sudah pernah diselesaikan. XP tidak diberikan ulang.');
+        }
+
         // ==========================================
         // 8. REDIRECT SETELAH BERHASIL
         // ==========================================
@@ -699,5 +863,163 @@ class TahapanController extends Controller
                     ? "Tahapan berhasil diselesaikan! Kamu mendapatkan {$expDidapat} EXP."
                     : 'Tahapan berhasil diselesaikan!'
             );
+    }
+    public function simpanJawabanApersepsi(
+        Request $request,
+        $ruang_belajar_id,
+        $tahapan_id
+    ) {
+        $userId = Auth::id();
+
+        $ruangBelajar = RuangBelajar::findOrFail($ruang_belajar_id);
+
+        abort_unless(
+            $ruangBelajar->siswa()
+                ->where('users.id', $userId)
+                ->exists(),
+            403
+        );
+
+        $tahapan = Tahapan::where(
+            'ruang_belajar_id',
+            $ruangBelajar->id
+        )
+            ->where('tipe', 'apersepsi')
+            ->findOrFail($tahapan_id);
+
+        // Pastikan siswa tidak melewati tahapan sebelumnya.
+        $tahapanSebelumnya = Tahapan::where(
+            'ruang_belajar_id',
+            $ruangBelajar->id
+        )
+            ->where('urutan', '<', $tahapan->urutan)
+            ->pluck('id');
+
+        $jumlahSelesai = TahapanUser::where('user_id', $userId)
+            ->whereIn('tahapan_id', $tahapanSebelumnya)
+            ->where('status', 'selesai')
+            ->distinct()
+            ->count('tahapan_id');
+
+        abort_unless(
+            $jumlahSelesai === $tahapanSebelumnya->count(),
+            403,
+            'Selesaikan tahapan sebelumnya terlebih dahulu.'
+        );
+
+        $konten = $tahapan->konten ?? [];
+
+        $forumAktif = filter_var(
+            data_get($konten, 'forum.aktif', false),
+            FILTER_VALIDATE_BOOLEAN
+        );
+
+        abort_unless($forumAktif, 403, 'Forum tidak aktif.');
+
+        $validated = $request->validate([
+            'jawaban.forum' => [
+                'required',
+                'string',
+                'min:1',
+                'max:5000',
+            ],
+        ]);
+
+        $jawaban = trim($validated['jawaban']['forum']);
+
+        if ($jawaban === '') {
+            return back()
+                ->withErrors([
+                    'jawaban.forum' => 'Jawaban wajib diisi.',
+                ])
+                ->withInput();
+        }
+
+        DB::transaction(function () use (
+            $userId,
+            $tahapan,
+            $jawaban
+        ) {
+            $progress = TahapanUser::firstOrCreate(
+                [
+                    'user_id' => $userId,
+                    'tahapan_id' => $tahapan->id,
+                ],
+                [
+                    'status' => 'aktif',
+                    'exp_didapat' => 0,
+                ]
+            );
+
+            // Jangan mengubah jawaban setelah tahapan selesai.
+            if ($progress->status === 'selesai') {
+                return;
+            }
+
+            $dataJawaban = $progress->jawaban ?? [];
+
+            if (!is_array($dataJawaban)) {
+                $dataJawaban = json_decode($dataJawaban, true) ?: [];
+            }
+
+            $dataJawaban['forum'] = $jawaban;
+
+            $progress->jawaban = $dataJawaban;
+            $progress->save();
+        });
+
+        return redirect()
+            ->route('siswa.ruang-belajar.tahapan.show', [
+                'ruang_belajar_id' => $ruang_belajar_id,
+                'tahapan_id' => $tahapan_id,
+            ])
+            ->with('success', 'Jawaban berhasil dikirim!');
+    }
+    private function sinkronkanPenyelesaianMateri(
+        $tahapan,
+        int $userId
+    ): bool {
+        $materi = $tahapan->ruangMateri;
+
+        if (!$materi) {
+            return false;
+        }
+
+        $submateriIds = $materi->submateris()
+            ->where('status', 'terbit')
+            ->pluck('id');
+
+        // Materi kosong tidak otomatis dianggap selesai.
+        if ($submateriIds->isEmpty()) {
+            return false;
+        }
+
+        $jumlahSelesai = SubmateriProgress::query()
+            ->where('user_id', $userId)
+            ->whereIn('submateri_id', $submateriIds)
+            ->whereNotNull('completed_at')
+            ->distinct()
+            ->count('submateri_id');
+
+        if ($jumlahSelesai < $submateriIds->count()) {
+            return false;
+        }
+
+        TahapanUser::updateOrCreate(
+            [
+                'user_id' => $userId,
+                'tahapan_id' => $tahapan->id,
+            ],
+            [
+                'status' => 'selesai',
+                'completed_at' => now(),
+
+                // XP submateri sudah dicatat di SubmateriProgress.
+                // Jangan menambahkan XP yang sama dua kali.
+                'exp_didapat' => 0,
+            ]
+        );
+
+        return true;
     }
 }

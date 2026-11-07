@@ -40,10 +40,10 @@
                         <label class="block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">
                             Pilih Tipe Sub Materi <span class="text-rose-500">*</span>
                         </label>
-                        <span class="text-[10px] text-gray-400 font-semibold" x-text="`${tipes.length}/4 Tipe Dipilih`"></span>
+                        <span class="text-[10px] text-gray-400 font-semibold" x-text="`${tipes.length}/5 Tipe Dipilih`"></span>
                     </div>
 
-                    <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
                         
                         <!-- Option: Teks -->
                         <label :class="tipes.includes('teks') ? 'border-sky-500 bg-sky-500/10 text-sky-600 dark:text-sky-400 ring-2 ring-sky-500/20' : 'border-gray-200 dark:border-pink-950/30 bg-gray-50/50 dark:bg-cyberdark-800 text-gray-400 hover:bg-gray-100 dark:hover:bg-cyberdark-700'" 
@@ -83,6 +83,22 @@
                             <input type="checkbox" name="tipe[]" value="latihan" x-model="tipes" class="hidden">
                             <i class="fa-solid fa-pen-to-square text-lg"></i>
                             <span class="text-xs font-bold">Latihan Soal</span>
+                        </label>
+                        <label
+                            :class="tipes.includes('coding_project')
+                                ? 'border-cyan-500 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 ring-2 ring-cyan-500/20'
+                                : 'border-gray-200 dark:border-pink-950/30 bg-gray-50/50 dark:bg-cyberdark-800 text-gray-400 hover:bg-gray-100 dark:hover:bg-cyberdark-700'"
+                            class="p-3.5 rounded-2xl border flex flex-col items-center justify-center gap-2 cursor-pointer transition text-center select-none">
+
+                            <input
+                                type="checkbox"
+                                name="tipe[]"
+                                value="coding_project"
+                                x-model="tipes"
+                                class="hidden">
+
+                            <i class="fa-solid fa-laptop-code text-lg"></i>
+                            <span class="text-xs font-bold">Coding Project</span>
                         </label>
 
                     </div>

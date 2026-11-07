@@ -13,6 +13,8 @@
     }
 
     $aktivitasList = data_get($dataKonten, 'aktivitas', []);
+    $aktivitasList = is_array($aktivitasList) ? array_values($aktivitasList) : [];
+    $totalAktivitas = count($aktivitasList);
 @endphp
 
 <style>
@@ -236,9 +238,34 @@
         padding: 10px;
     }
 }
+
+/* Ice Breaking — mission redesign */
+.ice-page { --ice-primary: #7c3aed; }
+.ice-mission-tracker { background: linear-gradient(125deg,#312e81 0%,#5b21b6 55%,#7c3aed 100%); box-shadow: 0 18px 40px rgba(76,29,149,.18); }
+.ice-eyebrow { color:#ddd6fe; font-size:11px; font-weight:900; letter-spacing:.16em; }
+.ice-mission-count { color:white; font-size:28px; font-weight:900; white-space:nowrap; }
+.ice-progress-track { height:10px; border-radius:99px; overflow:hidden; background:rgba(255,255,255,.2); }
+.ice-progress-fill { height:100%; background:linear-gradient(90deg,#fcd34d,#fb923c); border-radius:99px; transition:width .35s ease; }
+.ice-dots { display:flex; flex-wrap:wrap; gap:9px; }
+.ice-dot { width:36px; height:36px; border-radius:12px; background:rgba(255,255,255,.13); color:#ddd6fe; font-weight:900; font-size:12px; border:1px solid rgba(255,255,255,.2); transition:.2s; }
+.ice-dot.is-active { background:#fbbf24; color:#312e81; border-color:#fbbf24; transform:translateY(-2px); }
+.ice-dot.is-unlocked:not(.is-active) { background:rgba(255,255,255,.26); color:white; }
+.ice-dot:disabled { opacity:.45; cursor:not-allowed; }
+.student-activity[hidden], #iceFinishPanel[hidden], #iceNext[hidden] { display:none !important; }
+.student-activity.is-current { animation:iceEnter .3s ease both; box-shadow:0 12px 35px rgba(31,41,55,.05); }
+@keyframes iceEnter { from {opacity:.3; transform:translateY(10px)} to {opacity:1; transform:translateY(0)} }
+.ice-nav-secondary,.ice-nav-primary { padding:13px 20px; border-radius:14px; font-size:13px; font-weight:800; transition:.2s; }
+.ice-nav-secondary { background:#f3f4f6; color:#374151; }
+.dark .ice-nav-secondary { background:#374151; color:#f9fafb; }
+.ice-nav-secondary:disabled { opacity:.4; cursor:not-allowed; }
+.ice-nav-primary { color:white; background:linear-gradient(100deg,#7c3aed,#4f46e5); box-shadow:0 8px 20px rgba(109,40,217,.2); }
+.ice-nav-primary:hover:not(:disabled) { transform:translateY(-2px); }
+.student-code-piece:focus-visible,.code-answer-slot:focus-visible,.ice-dot:focus-visible { outline:3px solid #fbbf24; outline-offset:3px; }
+@media (max-width:640px) { .ice-nav-secondary,.ice-nav-primary { width:100%; } }
+@media (prefers-reduced-motion:reduce) { .student-activity.is-current {animation:none} .ice-progress-fill {transition:none} }
 </style>
 
-<div class="max-w-5xl mx-auto space-y-6 pb-10">
+<div class="max-w-5xl mx-auto space-y-6 pb-10 ice-page">
 
     {{-- HEADER --}}
     <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-6">
@@ -285,6 +312,25 @@
                 ]) }}">
 
             @csrf
+
+            {{-- MISSION TRACKER --}}
+            <div class="ice-mission-tracker rounded-3xl p-5 sm:p-7 mt-6" aria-label="Progres misi ice breaking">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div>
+                        <span class="ice-eyebrow"><i class="fa-solid fa-bolt mr-1"></i> MISSION MODE</span>
+                        <h2 class="text-xl sm:text-2xl font-black text-white mt-2">Selesaikan semua tantangan!</h2>
+                        <p class="text-sm text-indigo-100/80 mt-1">Satu aktivitas setiap langkah. Fokus, bermain, lalu lanjutkan.</p>
+                    </div>
+                    <div class="ice-mission-count"><span id="iceCurrentNumber">1</span><span class="text-white/50 mx-1">/</span>{{ $totalAktivitas }}</div>
+                </div>
+                <div class="ice-progress-track mt-5"><div id="iceProgressBar" class="ice-progress-fill" style="width: {{ $totalAktivitas ? (100 / $totalAktivitas) : 0 }}%"></div></div>
+                <div class="flex justify-between text-xs text-indigo-100/70 mt-2"><span id="iceMissionLabel">Misi 1 sedang dimainkan</span><span id="iceProgressText">{{ $totalAktivitas ? round(100 / $totalAktivitas) : 0 }}% perjalanan</span></div>
+                <div class="ice-dots mt-5" id="iceMissionDots" aria-label="Daftar misi">
+                    @foreach($aktivitasList as $dotIndex => $dotActivity)
+                        <button type="button" class="ice-dot {{ $dotIndex === 0 ? 'is-active' : '' }}" data-go-step="{{ $dotIndex }}" aria-label="Misi {{ $dotIndex + 1 }}" title="Misi {{ $dotIndex + 1 }}">{{ $dotIndex + 1 }}</button>
+                    @endforeach
+                </div>
+            </div>
 
             {{-- PETUNJUK --}}
             <div class="bg-blue-50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900 rounded-xl p-4 flex gap-3">
@@ -340,7 +386,8 @@
 
 
                     <section
-                        class="student-activity bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden"
+                        class="student-activity bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-gray-800 overflow-hidden {{ $index === 0 ? 'is-current' : '' }}"
+                        data-step-index="{{ $index }}"
                         data-activity-id="{{ $activityId }}"
                         data-type="{{ $tipe }}">
 
@@ -349,7 +396,7 @@
 
                             <div class="flex items-start gap-3">
 
-                                <div class="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-950/50 text-purple-600 flex items-center justify-center shrink-0 font-bold">
+                                <div class="w-12 h-12 rounded-2xl bg-purple-100 dark:bg-purple-950/50 text-purple-600 flex items-center justify-center shrink-0 font-black text-lg">
                                     {{ $index + 1 }}
                                 </div>
 
@@ -439,7 +486,7 @@
                                         <div class="code-game-hero mb-7">
 
                                             <div class="code-game-character">
-                                                <span>🫎</span>
+                                                <span>🧩</span>
                                             </div>
 
                                             <div class="code-game-instruction">
@@ -502,6 +549,7 @@
 
                                                     <div
                                                         class="code-answer-slot"
+                                                        role="button" tabindex="0" aria-label="Slot jawaban {{ $pieceIndex + 1 }}"
                                                         data-slot="{{ $pieceIndex }}">
 
                                                         <span class="slot-placeholder">
@@ -546,6 +594,7 @@
 
                                                     <div
                                                         class="student-code-piece"
+                                                        role="button" tabindex="0" aria-label="Pilih potongan kode {{ $pieceIndex + 1 }}"
                                                         draggable="true"
                                                         data-piece-index="{{ $pieceIndex + 1 }}">
 
@@ -614,8 +663,15 @@
             </div>
 
 
+            {{-- NAVIGASI MISI --}}
+            <div class="ice-nav mt-6 bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-gray-800 p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <button type="button" id="icePrevious" class="ice-nav-secondary" disabled><i class="fa-solid fa-arrow-left mr-2"></i>Sebelumnya</button>
+                <div class="text-center"><p class="text-sm font-bold text-gray-800 dark:text-white" id="iceNavTitle">Misi 1 dari {{ $totalAktivitas }}</p><p class="text-xs text-gray-500 dark:text-gray-400 mt-1" id="iceNavHint">Selesaikan misi untuk melanjutkan</p></div>
+                <button type="button" id="iceNext" class="ice-nav-primary">Misi Berikutnya<i class="fa-solid fa-arrow-right ml-2"></i></button>
+            </div>
+
             {{-- TOMBOL KIRIM --}}
-            <div class="mt-6 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div id="iceFinishPanel" class="mt-6 bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-gray-800 p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4" hidden>
 
                 <div>
                     <p class="font-semibold text-gray-800 dark:text-white">
@@ -836,6 +892,8 @@ document.addEventListener('DOMContentLoaded', function () {
         // Klik potongan kode
         pieces.forEach(piece => {
 
+            piece.addEventListener('keydown', function(event) { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); piece.click(); } });
+
             piece.addEventListener('click', function (event) {
 
                 event.preventDefault();
@@ -884,6 +942,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // Klik slot untuk menempatkan potongan
         slots.forEach(slot => {
+
+            slot.addEventListener('keydown', function(event) { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); slot.click(); } });
 
             slot.addEventListener('click', function () {
 
@@ -1006,12 +1066,92 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
     // ==========================================
+    // NAVIGASI MISI (tanpa mengubah payload backend)
+    // ==========================================
+    const activityPanels = Array.from(form.querySelectorAll('.student-activity'));
+    const previousButton = document.getElementById('icePrevious');
+    const nextButton = document.getElementById('iceNext');
+    const finishPanel = document.getElementById('iceFinishPanel');
+    const progressBar = document.getElementById('iceProgressBar');
+    const currentNumber = document.getElementById('iceCurrentNumber');
+    const progressText = document.getElementById('iceProgressText');
+    const missionLabel = document.getElementById('iceMissionLabel');
+    const navTitle = document.getElementById('iceNavTitle');
+    const navHint = document.getElementById('iceNavHint');
+    const dots = Array.from(document.querySelectorAll('.ice-dot'));
+    let currentStep = 0;
+    let highestUnlockedStep = 0;
+
+    function isActivityComplete(panel) {
+        if (!panel) return false;
+        const type = panel.dataset.type;
+        if (type === 'youtube') {
+            const check = panel.querySelector('input[type="checkbox"]');
+            return Boolean(check && check.checked);
+        }
+        if (type === 'susun_kode') {
+            const game = panel.querySelector('.code-sort-game');
+            if (!game) return false;
+            const slots = Array.from(game.querySelectorAll('.code-answer-slot'));
+            return slots.length > 0 && slots.every(slot => slot.querySelector('.student-code-piece'));
+        }
+        return true;
+    }
+
+    function showStep(index) {
+        if (index < 0 || index >= activityPanels.length || index > highestUnlockedStep) return;
+        currentStep = index;
+        activityPanels.forEach((panel, i) => {
+            panel.classList.toggle('is-current', i === index);
+            panel.hidden = i !== index;
+        });
+        previousButton.disabled = index === 0;
+        const last = index === activityPanels.length - 1;
+        nextButton.hidden = last;
+        finishPanel.hidden = !last;
+        currentNumber.textContent = String(index + 1);
+        const pct = Math.round(((index + 1) / activityPanels.length) * 100);
+        progressBar.style.width = pct + '%';
+        progressText.textContent = pct + '% perjalanan';
+        missionLabel.textContent = last ? 'Misi terakhir — siap selesaikan!' : `Misi ${index + 1} sedang dimainkan`;
+        navTitle.textContent = `Misi ${index + 1} dari ${activityPanels.length}`;
+        navHint.textContent = last ? 'Pastikan seluruh tantangan sudah selesai' : 'Selesaikan misi untuk melanjutkan';
+        dots.forEach((dot, i) => {
+            dot.classList.toggle('is-active', i === index);
+            dot.classList.toggle('is-unlocked', i <= highestUnlockedStep);
+            dot.disabled = i > highestUnlockedStep;
+        });
+    }
+
+    previousButton.addEventListener('click', () => showStep(currentStep - 1));
+    nextButton.addEventListener('click', () => {
+        if (!isActivityComplete(activityPanels[currentStep])) {
+            const type = activityPanels[currentStep].dataset.type;
+            alert(type === 'youtube' ? 'Centang konfirmasi setelah menonton video sebelum melanjutkan.' : 'Isi seluruh slot susun kode sebelum melanjutkan.');
+            return;
+        }
+        highestUnlockedStep = Math.max(highestUnlockedStep, currentStep + 1);
+        showStep(currentStep + 1);
+        document.querySelector('.ice-mission-tracker')?.scrollIntoView({behavior: 'smooth', block: 'start'});
+    });
+    dots.forEach(dot => dot.addEventListener('click', () => showStep(Number(dot.dataset.goStep))));
+    showStep(0);
+
+    // ==========================================
     // VALIDASI DAN PENGIRIMAN JAWABAN
     // ==========================================
 
     form.addEventListener('submit', function (event) {
 
-        let valid = true;
+        let valid = activityPanels.every(isActivityComplete);
+        if (!valid) {
+            event.preventDefault();
+            const firstIncomplete = activityPanels.findIndex(panel => !isActivityComplete(panel));
+            highestUnlockedStep = Math.max(highestUnlockedStep, firstIncomplete);
+            showStep(firstIncomplete);
+            alert('Masih ada misi yang belum diselesaikan.');
+            return;
+        }
 
         const games = Array.from(
             form.querySelectorAll('.code-sort-game')

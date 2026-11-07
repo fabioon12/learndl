@@ -25,7 +25,7 @@ class SubmateriController extends Controller
         $request->validate([
             'judul_sub'      => 'required|string|max:255',
             'deskripsi'      => 'nullable|string',
-            'tipe'           => 'required|array|min:1|max:4',
+            'tipe'           => 'required|array|min:1|max:6',
             'estimasi_waktu' => 'required|string',
             'xp_reward'      => 'required|integer|min:0',
             'status'         => 'required|in:terbit,draft',
@@ -65,8 +65,8 @@ class SubmateriController extends Controller
         $request->validate([
             'judul_sub'      => 'required|string|max:255',
             'deskripsi'      => 'nullable|string',
-            'tipe'           => 'required|array|min:1|max:5',
-            'tipe.*'         => 'in:video,teks,interaktif,praktik,latihan',
+            'tipe'           => 'required|array|min:1|max:6',
+            'tipe.*'         => 'in:video,teks,interaktif,praktik,latihan,coding_project',
             'estimasi_waktu' => 'required|string',
             'xp_reward'      => 'required|integer|min:0',
             'status'         => 'required|in:terbit,draft',

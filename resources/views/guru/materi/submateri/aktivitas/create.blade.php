@@ -5,7 +5,9 @@
 @push('scripts')
 <!-- CDN Trix Editor -->
 <link rel="stylesheet" type="text/css" href="https://unpkg.com/trix@2.0.8/dist/trix.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/trix@2.1.15/dist/trix.css">
 <script type="text/javascript" src="https://unpkg.com/trix@2.0.8/dist/trix.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/trix@2.1.15/dist/trix.umd.min.js"></script>
 
 <style>
     /* Custom Styling Trix Editor */
@@ -77,6 +79,7 @@
         display: list-item !important;
         margin-bottom: 0.25rem !important;
     }
+    
 </style>
 
 @endpush
@@ -180,7 +183,11 @@
                             @include('guru.materi.submateri.aktivitas.partials.block-latihan')
                         </div>
                     </template>
-
+                    <template x-if="block.tipe === 'coding_project'">
+                        <div>
+                            @include('guru.materi.submateri.aktivitas.partials.block-coding-project')
+                        </div>
+                    </template>
                 </div>
             </template>
         </div>

@@ -104,10 +104,11 @@
     // DATA SISWA
     // ==========================================
 
-    $studentLevel = max(1, (int) ($user->level ?? 1));
+    // Level mengikuti XP global (1000 XP per level).
 
     // Total XP dari seluruh sumber EXP.
-    $studentXP = (int) $user->totalXp();
+    $studentXP = max(0, (int) $user->totalXp());
+    $studentLevel = intdiv($studentXP, 1000) + 1;
 
     $totalMedals = (int) ($medals ?? 0);
 
@@ -130,8 +131,12 @@
     // EXP RUANG BELAJAR
     // ==========================================
 
-    $totalExp = (int) ($totalExp ?? 0);
-    $expDiperoleh = (int) ($expDiperoleh ?? 0);
+    $totalExp = max(0, (int) ($totalExp ?? 0));
+    $expDiperoleh = max(0, (int) ($expDiperoleh ?? 0));
+    $totalExpTahapan = max(0, (int) ($totalExpTahapan ?? 0));
+    $expDiperolehTahapan = max(0, (int) ($expDiperolehTahapan ?? 0));
+    $totalExpMateri = max(0, (int) ($totalExpMateri ?? 0));
+    $expDiperolehMateri = max(0, (int) ($expDiperolehMateri ?? 0));
 
     // ==========================================
     // WARNA BERDASARKAN ICON DATABASE
@@ -354,6 +359,12 @@
                         $iconKey = str_replace('fa-solid ', '', $iconKey);
                         $warna = $warnaIcon[$iconKey] ?? $warnaDefault;
 
+                        // Reward tahapan materi berasal dari seluruh submateri terbit.
+                        $xpTahapanTampil = $tahapan->tipe === 'materi'
+                            ? (int) ($tahapan->ruangMateri?->submateris
+                                ?->where('status', 'terbit')->sum('xp_reward') ?? 0)
+                            : (int) ($tahapan->xp_reward ?? 0);
+
                         if ($status === 'selesai') {
                             $pathColor = '#FBBF24';
                         } elseif ($status === 'terkunci') {
@@ -376,7 +387,7 @@
                                 <span>SIAP DIMULAI</span>
 
                                 <span class="bg-white/50 px-2 py-1 rounded-lg text-[10px]">
-                                    +{{ $tahapan->xp_reward }} XP
+                                    +{{ number_format($xpTahapanTampil) }} XP
                                 </span>
 
                                 <span class="absolute top-full left-1/2 -translate-x-1/2 border-[7px] border-transparent border-t-white/70"></span>
@@ -737,7 +748,7 @@
                             </p>
 
                             <p class="text-[9px] text-gray-500 dark:text-gray-400">
-                                EXP dari tahapan ini
+                                Termasuk EXP dari seluruh misi materi
                             </p>
                         </div>
 
@@ -757,6 +768,30 @@
                         style="width: {{ $totalExp > 0 ? min(100, ($expDiperoleh / $totalExp) * 100) : 0 }}%">
                     </div>
 
+                </div>
+
+                {{-- RINCIAN EXP: Tahapan dan Ruang Materi --}}
+                <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div class="rounded-xl bg-white/80 dark:bg-gray-800/60 p-3 border border-amber-100 dark:border-gray-700">
+                        <div class="flex items-center gap-2 text-[10px] font-bold text-gray-500 dark:text-gray-400">
+                            <i class="fa-solid fa-list-check text-indigo-500"></i>
+                            EXP Tahapan
+                        </div>
+                        <p class="mt-1 text-sm font-black text-gray-900 dark:text-white">
+                            {{ number_format($expDiperolehTahapan) }}
+                            <span class="text-[10px] text-gray-400">/ {{ number_format($totalExpTahapan) }}</span>
+                        </p>
+                    </div>
+                    <div class="rounded-xl bg-white/80 dark:bg-gray-800/60 p-3 border border-amber-100 dark:border-gray-700">
+                        <div class="flex items-center gap-2 text-[10px] font-bold text-gray-500 dark:text-gray-400">
+                            <i class="fa-solid fa-book-open text-emerald-500"></i>
+                            EXP Ruang Materi
+                        </div>
+                        <p class="mt-1 text-sm font-black text-gray-900 dark:text-white">
+                            {{ number_format($expDiperolehMateri) }}
+                            <span class="text-[10px] text-gray-400">/ {{ number_format($totalExpMateri) }}</span>
+                        </p>
+                    </div>
                 </div>
 
             </div>

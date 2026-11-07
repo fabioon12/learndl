@@ -1,267 +1,707 @@
+
 @extends('landingpage.layouts.app')
 
-@section('title', 'Landingpage - Learn DL')
+@section('title', 'LearnDL - Platform Pembelajaran Mendalam')
 
 @section('content')
-    <section id="metode" class="py-24 bg-purple-50/50 dark:bg-[#0c091f]/40 border-y border-purple-100 dark:border-purple-950/30 theme-transition relative overflow-hidden">
-        {{-- Hiasan Glow Latar Belakang --}}
-        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-gradient-to-r from-purple-500/10 via-indigo-500/10 to-blue-500/10 blur-[120px] pointer-events-none"></div>
 
-        <div class="max-w-7xl mx-auto px-6 lg:px-8 reveal-view relative z-10">
-            {{-- Header Section --}}
-            <div class="max-w-3xl mx-auto text-center mb-16 space-y-3">
-                <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-600 dark:text-purple-300 text-xs font-semibold">
-                    <i class="fa-solid fa-sparkles text-purple-500"></i>
-                    <span>Pendekatan Deep Learning</span>
-                </div>
-                <h2 class="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-                    3 Pilar Pengalaman Belajar
-                </h2>
-                <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-                    Dirancang khusus untuk membangun fondasi logika koding yang kuat, holistik, dan berkesan.
-                </p>
-            </div>
+{{-- =========================================================
+    1. METODE PEMBELAJARAN
+========================================================= --}}
+<section id="metode" class="relative overflow-hidden py-24 bg-purple-50/60 dark:bg-[#0c091f]/50 border-y border-purple-100 dark:border-purple-950/30 theme-transition">
 
-            {{-- Grid 3 Pilar --}}
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                
-                {{-- 1. Pembelajaran Bermakna --}}
-                <div class="group bg-white dark:bg-[#120f24] p-8 rounded-3xl border border-purple-100 dark:border-white/5 flex flex-col justify-between min-h-[300px] shadow-sm hover:shadow-xl hover:shadow-purple-500/10 hover:-translate-y-2 hover:border-purple-500/40 transition-all duration-300 theme-transition relative overflow-hidden">
-                    <div class="absolute -top-12 -right-12 w-32 h-32 bg-purple-500/10 rounded-full blur-2xl group-hover:scale-150 transition duration-500"></div>
-                    
-                    <div class="space-y-4 relative z-10">
-                        <div class="flex items-center justify-between">
-                            <div class="w-12 h-12 rounded-2xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center text-xl shadow-inner group-hover:scale-110 group-hover:bg-purple-600 group-hover:text-white transition duration-300">
-                                <i class="fa-solid fa-lightbulb"></i>
-                            </div>
-                            <span class="text-[10px] font-mono font-bold text-purple-600 dark:text-purple-300 bg-purple-500/10 px-3 py-1 rounded-full uppercase tracking-wider">Pilar 01</span>
+    <div class="absolute -top-20 -left-20 w-80 h-80 bg-purple-500/10 rounded-full blur-[100px] pointer-events-none"></div>
+    <div class="absolute bottom-0 right-0 w-96 h-96 bg-blue-500/10 rounded-full blur-[120px] pointer-events-none"></div>
+
+    <div class="max-w-7xl mx-auto px-6 lg:px-8 relative z-10">
+
+        <div class="max-w-3xl mx-auto text-center mb-16 space-y-4">
+            <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-600 dark:text-purple-300 text-xs font-bold">
+                <i class="fa-solid fa-sparkles"></i>
+                PENDEKATAN DEEP LEARNING
+            </span>
+
+            <h2 class="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 dark:text-white tracking-tight leading-tight">
+                Belajar Lebih Dalam,
+                <span class="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600">
+                    Berpikir Lebih Kritis.
+                </span>
+            </h2>
+
+            <p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed max-w-2xl mx-auto">
+                Pengalaman pembelajaran yang membantu siswa memahami konsep,
+                membangun kesadaran berpikir, dan menerapkan pengetahuan
+                melalui aktivitas belajar yang bermakna.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+            {{-- Bermakna --}}
+            <div class="group relative overflow-hidden bg-white dark:bg-[#120f24] p-8 rounded-3xl border border-purple-100 dark:border-white/5 shadow-sm hover:shadow-xl hover:shadow-purple-500/10 hover:-translate-y-2 transition-all duration-300">
+
+                <div class="absolute -right-12 -top-12 w-36 h-36 rounded-full bg-purple-500/10 blur-2xl group-hover:scale-150 transition duration-500"></div>
+
+                <div class="relative z-10 space-y-6">
+                    <div class="flex items-center justify-between">
+                        <div class="w-14 h-14 rounded-2xl bg-purple-100 dark:bg-purple-500/15 text-purple-600 dark:text-purple-400 flex items-center justify-center text-2xl">
+                            <i class="fa-solid fa-lightbulb"></i>
                         </div>
+                        <span class="text-[10px] font-bold tracking-widest text-purple-500 bg-purple-500/10 px-3 py-1.5 rounded-full">
+                            PILAR 01
+                        </span>
+                    </div>
 
-                        <h3 class="text-xl font-bold text-slate-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400 transition duration-300">
+                    <div class="space-y-3">
+                        <h3 class="text-xl font-extrabold text-slate-900 dark:text-white">
                             Pembelajaran Bermakna
                         </h3>
-                        
-                        <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                            Menghubungkan konsep logika percabangan dengan studi kasus dunia nyata, sehingga siswa memahami fungsi konkret dan alasan di balik setiap baris kode.
+                        <p class="text-xs text-slate-500 dark:text-slate-400 leading-7">
+                            Menghubungkan materi pembelajaran dengan permasalahan
+                            nyata sehingga siswa memahami konsep, tujuan,
+                            dan penerapannya dalam kehidupan sehari-hari.
                         </p>
                     </div>
 
-                    <div class="pt-6 border-t border-slate-100 dark:border-white/5 flex items-center gap-2 text-xs font-semibold text-purple-600 dark:text-purple-400 relative z-10">
+                    <div class="pt-5 border-t border-slate-100 dark:border-white/5 flex items-center gap-2 text-xs font-bold text-purple-600 dark:text-purple-400">
+                        <i class="fa-solid fa-puzzle-piece"></i>
                         <span>Studi Kasus Kontekstual</span>
-                        <i class="fa-solid fa-arrow-right text-[10px] group-hover:translate-x-1 transition duration-300"></i>
                     </div>
                 </div>
+            </div>
 
-                {{-- 2. Pembelajaran Berkesadaran --}}
-                <div class="group bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 p-8 rounded-3xl text-white flex flex-col justify-between min-h-[300px] shadow-xl shadow-blue-500/20 hover:-translate-y-2 transition-all duration-300 relative overflow-hidden">
-                    <div class="absolute -bottom-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-2xl group-hover:scale-125 transition duration-500"></div>
+            {{-- Berkesadaran --}}
+            <div class="group relative overflow-hidden bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 p-8 rounded-3xl text-white shadow-xl shadow-indigo-500/20 hover:-translate-y-2 transition-all duration-300">
 
-                    <div class="space-y-4 relative z-10">
-                        <div class="flex items-center justify-between">
-                            <div class="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center text-xl text-white backdrop-blur-md group-hover:scale-110 group-hover:bg-white group-hover:text-indigo-600 transition duration-300">
-                                <i class="fa-solid fa-brain"></i>
-                            </div>
-                            <span class="text-[10px] font-mono font-bold text-blue-200 bg-white/10 px-3 py-1 rounded-full uppercase tracking-wider border border-white/10">Pilar 02</span>
+                <div class="absolute -right-10 -bottom-10 w-48 h-48 rounded-full bg-white/10 blur-3xl"></div>
+
+                <div class="relative z-10 space-y-6">
+                    <div class="flex items-center justify-between">
+                        <div class="w-14 h-14 rounded-2xl bg-white/15 backdrop-blur text-white flex items-center justify-center text-2xl">
+                            <i class="fa-solid fa-brain"></i>
                         </div>
+                        <span class="text-[10px] font-bold tracking-widest text-white bg-white/15 px-3 py-1.5 rounded-full">
+                            PILAR 02
+                        </span>
+                    </div>
 
-                        <h3 class="text-xl font-bold text-white">
+                    <div class="space-y-3">
+                        <h3 class="text-xl font-extrabold">
                             Pembelajaran Berkesadaran
                         </h3>
-                        
-                        <p class="text-xs text-blue-100/90 leading-relaxed">
-                            Mendorong pemahaman metakognitif yang reflektif. Siswa diajak menyadari proses berpikirnya sendiri saat menganalisis alur logika dan menelusuri pesan error.
+                        <p class="text-xs text-blue-100 leading-7">
+                            Mendorong siswa menyadari proses berpikirnya sendiri,
+                            menganalisis kesalahan, mengevaluasi strategi,
+                            dan menentukan langkah perbaikan.
                         </p>
                     </div>
 
-                    <div class="pt-6 border-t border-white/10 flex items-center gap-2 text-xs font-semibold text-blue-100 relative z-10">
-                        <span>Analisis & Refleksi Logika</span>
-                        <i class="fa-solid fa-arrow-right text-[10px] group-hover:translate-x-1 transition duration-300"></i>
+                    <div class="pt-5 border-t border-white/15 flex items-center gap-2 text-xs font-bold text-blue-100">
+                        <i class="fa-solid fa-magnifying-glass-chart"></i>
+                        <span>Analisis dan Refleksi</span>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Menggembirakan --}}
+            <div class="group relative overflow-hidden bg-white dark:bg-[#120f24] p-8 rounded-3xl border border-purple-100 dark:border-white/5 shadow-sm hover:shadow-xl hover:shadow-pink-500/10 hover:-translate-y-2 transition-all duration-300">
+
+                <div class="absolute -right-12 -top-12 w-36 h-36 rounded-full bg-pink-500/10 blur-2xl group-hover:scale-150 transition duration-500"></div>
+
+                <div class="relative z-10 space-y-6">
+                    <div class="flex items-center justify-between">
+                        <div class="w-14 h-14 rounded-2xl bg-pink-100 dark:bg-pink-500/15 text-pink-600 dark:text-pink-400 flex items-center justify-center text-2xl">
+                            <i class="fa-solid fa-gamepad"></i>
+                        </div>
+                        <span class="text-[10px] font-bold tracking-widest text-pink-500 bg-pink-500/10 px-3 py-1.5 rounded-full">
+                            PILAR 03
+                        </span>
+                    </div>
+
+                    <div class="space-y-3">
+                        <h3 class="text-xl font-extrabold text-slate-900 dark:text-white">
+                            Pembelajaran Menggembirakan
+                        </h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 leading-7">
+                            Menghadirkan tantangan interaktif, kuis,
+                            aktivitas praktik, dan sistem penghargaan
+                            untuk meningkatkan keterlibatan siswa.
+                        </p>
+                    </div>
+
+                    <div class="pt-5 border-t border-slate-100 dark:border-white/5 flex items-center gap-2 text-xs font-bold text-pink-600 dark:text-pink-400">
+                        <i class="fa-solid fa-trophy"></i>
+                        <span>Gamifikasi dan Tantangan</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+
+{{-- =========================================================
+    2. FITUR UNGGULAN
+========================================================= --}}
+<section id="fitur" class="relative overflow-hidden py-24">
+
+    <div class="absolute top-1/3 right-0 w-96 h-96 bg-blue-500/10 blur-[120px] pointer-events-none"></div>
+
+    <div class="max-w-7xl mx-auto px-6 lg:px-8 relative z-10">
+
+        <div class="max-w-3xl mx-auto text-center mb-16 space-y-4">
+            <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 text-xs font-bold">
+                <i class="fa-solid fa-microchip"></i>
+                FITUR UNGGULAN PLATFORM
+            </span>
+
+            <h2 class="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white">
+                Belajar Coding dengan
+                <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
+                    Pengalaman Interaktif
+                </span>
+            </h2>
+
+            <p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+                Setiap aktivitas dirancang untuk membantu siswa
+                memahami materi, mencoba solusi, dan mengevaluasi hasil belajar.
+            </p>
+        </div>
+
+        <div class="grid lg:grid-cols-12 gap-12 items-center">
+
+            {{-- Penjelasan --}}
+            <div class="lg:col-span-5 space-y-7">
+
+                <div class="space-y-3">
+                    <span class="text-[10px] font-extrabold text-blue-600 dark:text-blue-400 tracking-[0.2em] uppercase">
+                        Interactive Learning Experience
+                    </span>
+
+                    <h3 class="text-3xl font-extrabold text-slate-900 dark:text-white leading-tight">
+                        Pahami Kesalahan,
+                        Temukan Solusi,
+                        <span class="text-indigo-600 dark:text-indigo-400">Bangun Logika.</span>
+                    </h3>
+
+                    <p class="text-xs text-slate-500 dark:text-slate-400 leading-7">
+                        Siswa tidak hanya memperoleh materi, tetapi juga
+                        menghadapi tantangan yang mendorong mereka untuk
+                        menganalisis masalah dan menemukan solusi secara mandiri.
+                    </p>
+                </div>
+
+                {{-- Fitur 1 --}}
+                <div class="flex gap-4 items-start">
+                    <div class="w-11 h-11 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                        <i class="fa-solid fa-code text-lg"></i>
+                    </div>
+                    <div>
+                        <h4 class="text-sm font-bold text-slate-900 dark:text-white">
+                            Latihan Pemrograman Interaktif
+                        </h4>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-6">
+                            Siswa menyusun kode dan menyelesaikan tantangan
+                            sesuai instruksi yang diberikan.
+                        </p>
                     </div>
                 </div>
 
-                {{-- 3. Pembelajaran Menggembirakan --}}
-                <div class="group bg-white dark:bg-[#120f24] p-8 rounded-3xl border border-purple-100 dark:border-white/5 flex flex-col justify-between min-h-[300px] shadow-sm hover:shadow-xl hover:shadow-pink-500/10 hover:-translate-y-2 hover:border-pink-500/40 transition-all duration-300 theme-transition relative overflow-hidden">
-                    <div class="absolute -top-12 -right-12 w-32 h-32 bg-pink-500/10 rounded-full blur-2xl group-hover:scale-150 transition duration-500"></div>
-
-                    <div class="space-y-4 relative z-10">
-                        <div class="flex items-center justify-between">
-                            <div class="w-12 h-12 rounded-2xl bg-pink-500/10 text-pink-600 dark:text-pink-400 flex items-center justify-center text-xl shadow-inner group-hover:scale-110 group-hover:bg-pink-600 group-hover:text-white transition duration-300">
-                                <i class="fa-solid fa-gamepad"></i>
-                            </div>
-                            <span class="text-[10px] font-mono font-bold text-pink-600 dark:text-pink-300 bg-pink-500/10 px-3 py-1 rounded-full uppercase tracking-wider">Pilar 03</span>
-                        </div>
-
-                        <h3 class="text-xl font-bold text-slate-900 dark:text-white group-hover:text-pink-600 dark:group-hover:text-pink-400 transition duration-300">
-                            Pembelajaran Menggembirakan
-                        </h3>
-                        
-                        <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                            Menghadirkan pengalaman koding yang seru melalui tantangan interaktif, kuis adaptif, dan poin pencapaian saat siswa berhasil memecahkan tantangan program.
+                {{-- Fitur 2 --}}
+                <div class="flex gap-4 items-start">
+                    <div class="w-11 h-11 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
+                        <i class="fa-solid fa-lightbulb text-lg"></i>
+                    </div>
+                    <div>
+                        <h4 class="text-sm font-bold text-slate-900 dark:text-white">
+                            Petunjuk dan Umpan Balik
+                        </h4>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-6">
+                            Mendapatkan petunjuk saat jawaban belum tepat
+                            sehingga siswa dapat memperbaiki pemahamannya.
                         </p>
                     </div>
+                </div>
 
-                    <div class="pt-6 border-t border-slate-100 dark:border-white/5 flex items-center gap-2 text-xs font-semibold text-pink-600 dark:text-pink-400 relative z-10">
-                        <span>Gamifikasi & Kuis Adaptif</span>
-                        <i class="fa-solid fa-arrow-right text-[10px] group-hover:translate-x-1 transition duration-300"></i>
+                {{-- Fitur 3 --}}
+                <div class="flex gap-4 items-start">
+                    <div class="w-11 h-11 rounded-xl bg-pink-500/10 text-pink-600 dark:text-pink-400 flex items-center justify-center shrink-0">
+                        <i class="fa-solid fa-chart-line text-lg"></i>
                     </div>
+                    <div>
+                        <h4 class="text-sm font-bold text-slate-900 dark:text-white">
+                            Progres dan Pengalaman Belajar
+                        </h4>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-6">
+                            Memantau perkembangan aktivitas dan pencapaian
+                            belajar melalui sistem XP dan level.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+
+            {{-- Preview Editor Kode Tanpa Gambar --}}
+            <div class="lg:col-span-7">
+
+                <div class="relative">
+                    <div class="absolute -inset-3 bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-pink-500/20 blur-2xl rounded-[2rem]"></div>
+
+                    <div class="relative rounded-3xl overflow-hidden bg-[#111827] border border-slate-700 shadow-2xl">
+
+                        {{-- Header Editor --}}
+                        <div class="flex items-center justify-between px-5 py-4 bg-[#1e293b] border-b border-white/5">
+                            <div class="flex items-center gap-2">
+                                <span class="w-3 h-3 rounded-full bg-red-400"></span>
+                                <span class="w-3 h-3 rounded-full bg-yellow-400"></span>
+                                <span class="w-3 h-3 rounded-full bg-green-400"></span>
+                            </div>
+
+                            <div class="flex items-center gap-2 text-[10px] text-slate-400 font-mono">
+                                <i class="fa-solid fa-code text-blue-400"></i>
+                                latihan-percabangan.html
+                            </div>
+
+                            <span class="text-[10px] text-emerald-400 font-semibold">
+                                <i class="fa-solid fa-circle text-[6px]"></i> Active
+                            </span>
+                        </div>
+
+                        {{-- Editor --}}
+                        <div class="grid grid-cols-1 sm:grid-cols-2">
+
+                            <div class="p-5 sm:p-6 border-b sm:border-b-0 sm:border-r border-white/5">
+                                <div class="flex items-center justify-between mb-5">
+                                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                        Code Editor
+                                    </span>
+                                    <span class="text-[9px] text-slate-500">HTML</span>
+                                </div>
+
+                                <div class="font-mono text-xs leading-8 space-y-1">
+                                    <div class="flex gap-4">
+                                        <span class="text-slate-600">01</span>
+                                        <span class="text-pink-400">&lt;!DOCTYPE html&gt;</span>
+                                    </div>
+                                    <div class="flex gap-4">
+                                        <span class="text-slate-600">02</span>
+                                        <span class="text-blue-300">&lt;html&gt;</span>
+                                    </div>
+                                    <div class="flex gap-4">
+                                        <span class="text-slate-600">03</span>
+                                        <span class="text-blue-300">&nbsp;&nbsp;&lt;body&gt;</span>
+                                    </div>
+                                    <div class="flex gap-4 bg-indigo-500/10 -mx-5 px-5 border-l-2 border-indigo-400">
+                                        <span class="text-slate-600">04</span>
+                                        <span class="text-purple-300">&nbsp;&nbsp;&nbsp;&nbsp;&lt;h1&gt;</span>
+                                    </div>
+                                    <div class="flex gap-4">
+                                        <span class="text-slate-600">05</span>
+                                        <span class="text-emerald-400">&nbsp;&nbsp;&nbsp;&nbsp;Hello World</span>
+                                    </div>
+                                    <div class="flex gap-4">
+                                        <span class="text-slate-600">06</span>
+                                        <span class="text-purple-300">&nbsp;&nbsp;&nbsp;&nbsp;&lt;/h1&gt;</span>
+                                    </div>
+                                    <div class="flex gap-4">
+                                        <span class="text-slate-600">07</span>
+                                        <span class="text-blue-300">&nbsp;&nbsp;&lt;/body&gt;</span>
+                                    </div>
+                                    <div class="flex gap-4">
+                                        <span class="text-slate-600">08</span>
+                                        <span class="text-blue-300">&lt;/html&gt;</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {{-- Preview --}}
+                            <div class="p-5 sm:p-6 bg-[#0b1120]">
+                                <div class="flex items-center justify-between mb-5">
+                                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                        Live Preview
+                                    </span>
+                                    <i class="fa-solid fa-eye text-slate-500 text-xs"></i>
+                                </div>
+
+                                <div class="min-h-[220px] rounded-2xl bg-white flex flex-col items-center justify-center p-5 text-center">
+                                    <div class="text-3xl font-extrabold text-slate-900">
+                                        Hello World
+                                    </div>
+                                    <p class="text-[10px] text-slate-400 mt-3">
+                                        Hasil tampilan kode HTML
+                                    </p>
+                                </div>
+
+                                <div class="flex items-center justify-between mt-4">
+                                    <div class="flex items-center gap-2 text-[10px] text-emerald-400">
+                                        <i class="fa-solid fa-circle-check"></i>
+                                        Kode berhasil dijalankan
+                                    </div>
+                                    <span class="text-[9px] text-slate-500 font-mono">HTML OUTPUT</span>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        {{-- Footer Editor --}}
+                        <div class="flex flex-wrap items-center justify-between gap-3 px-5 py-4 bg-[#1e293b] border-t border-white/5">
+                            <span class="text-[10px] text-slate-400">
+                                <i class="fa-solid fa-terminal mr-1"></i>
+                                Output berhasil ditampilkan
+                            </span>
+                            <div class="flex items-center gap-2">
+                                <span class="px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 text-[10px] font-bold">
+                                    <i class="fa-solid fa-check mr-1"></i> Success
+                                </span>
+                                <span class="px-3 py-1.5 rounded-lg bg-indigo-500 text-white text-[10px] font-bold">
+                                    +25 XP
+                                </span>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+
+{{-- =========================================================
+    3. SILABUS
+========================================================= --}}
+<section id="silabus" class="relative overflow-hidden py-24 bg-purple-50/60 dark:bg-[#0c091f]/50 border-y border-purple-100 dark:border-purple-950/30">
+
+    <div class="max-w-5xl mx-auto px-6 lg:px-8 relative z-10">
+
+        <div class="text-center mb-16 space-y-4">
+            <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-600 dark:text-purple-400 text-xs font-bold">
+                <i class="fa-solid fa-book-open"></i>
+                SILABUS PEMBELAJARAN
+            </span>
+
+            <h2 class="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white">
+                Materi Pembelajaran
+            </h2>
+
+            <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-xl mx-auto leading-relaxed">
+                Pelajari konsep pemrograman secara bertahap,
+                mulai dari pengenalan hingga penerapan dalam menyelesaikan masalah.
+            </p>
+        </div>
+
+        <div class="relative space-y-5">
+
+            <div class="absolute left-7 top-8 bottom-8 w-px bg-gradient-to-b from-blue-500 via-purple-500 to-emerald-500 hidden sm:block"></div>
+
+            {{-- Materi 1 --}}
+            <div class="group relative flex items-center gap-5 bg-white dark:bg-[#120f24] p-5 sm:p-6 rounded-2xl border border-purple-100 dark:border-white/5 shadow-sm hover:shadow-lg hover:border-blue-400/50 transition">
+                <div class="w-14 h-14 rounded-2xl bg-blue-600 text-white flex items-center justify-center text-xl shrink-0 relative z-10 shadow-lg shadow-blue-500/20">
+                    <i class="fa-solid fa-code"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <span class="text-[10px] font-bold text-blue-500 uppercase tracking-wider">Materi 01</span>
+                    <h3 class="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white mt-1">
+                        Pengenalan Percabangan
+                    </h3>
+                    <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                        Memahami konsep dasar pengambilan keputusan dalam program.
+                    </p>
+                </div>
+                <i class="fa-solid fa-arrow-right text-slate-300 group-hover:text-blue-500 group-hover:translate-x-1 transition"></i>
+            </div>
+
+            {{-- Materi 2 --}}
+            <div class="group relative flex items-center gap-5 bg-white dark:bg-[#120f24] p-5 sm:p-6 rounded-2xl border border-purple-100 dark:border-white/5 shadow-sm hover:shadow-lg hover:border-purple-400/50 transition">
+                <div class="w-14 h-14 rounded-2xl bg-purple-600 text-white flex items-center justify-center text-xl shrink-0 relative z-10 shadow-lg shadow-purple-500/20">
+                    <i class="fa-solid fa-bullseye"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <span class="text-[10px] font-bold text-purple-500 uppercase tracking-wider">Materi 02</span>
+                    <h3 class="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white mt-1">
+                        Fungsi dan Tujuan Percabangan
+                    </h3>
+                    <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                        Mengenali kegunaan percabangan dalam menyelesaikan permasalahan.
+                    </p>
+                </div>
+                <i class="fa-solid fa-arrow-right text-slate-300 group-hover:text-purple-500 group-hover:translate-x-1 transition"></i>
+            </div>
+
+            {{-- Materi 3 --}}
+            <div class="group relative flex items-center gap-5 bg-white dark:bg-[#120f24] p-5 sm:p-6 rounded-2xl border border-purple-100 dark:border-white/5 shadow-sm hover:shadow-lg hover:border-pink-400/50 transition">
+                <div class="w-14 h-14 rounded-2xl bg-pink-600 text-white flex items-center justify-center text-xl shrink-0 relative z-10 shadow-lg shadow-pink-500/20">
+                    <i class="fa-solid fa-diagram-project"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <span class="text-[10px] font-bold text-pink-500 uppercase tracking-wider">Materi 03</span>
+                    <h3 class="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white mt-1">
+                        Jenis-Jenis Percabangan
+                    </h3>
+                    <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                        Mempelajari bentuk percabangan tunggal, ganda, dan bersarang.
+                    </p>
+                </div>
+                <i class="fa-solid fa-arrow-right text-slate-300 group-hover:text-pink-500 group-hover:translate-x-1 transition"></i>
+            </div>
+
+            {{-- Materi 4 --}}
+            <div class="group relative flex items-center gap-5 bg-white dark:bg-[#120f24] p-5 sm:p-6 rounded-2xl border border-purple-100 dark:border-white/5 shadow-sm hover:shadow-lg hover:border-emerald-400/50 transition">
+                <div class="w-14 h-14 rounded-2xl bg-emerald-600 text-white flex items-center justify-center text-xl shrink-0 relative z-10 shadow-lg shadow-emerald-500/20">
+                    <i class="fa-solid fa-terminal"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <span class="text-[10px] font-bold text-emerald-500 uppercase tracking-wider">Materi 04</span>
+                    <h3 class="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white mt-1">
+                        Aturan Penulisan Sintaks Percabangan
+                    </h3>
+                    <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                        Menerapkan sintaks percabangan dengan struktur kode yang benar.
+                    </p>
+                </div>
+                <i class="fa-solid fa-arrow-right text-slate-300 group-hover:text-emerald-500 group-hover:translate-x-1 transition"></i>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+
+{{-- =========================================================
+    4. EVALUASI DAN DASHBOARD PREVIEW
+========================================================= --}}
+<section id="evaluasi" class="py-24 relative overflow-hidden">
+
+    <div class="absolute top-0 left-0 w-96 h-96 bg-indigo-500/10 blur-[130px] pointer-events-none"></div>
+
+    <div class="max-w-7xl mx-auto px-6 lg:px-8 relative z-10 space-y-16">
+
+        {{-- CTA Kuis --}}
+        <div class="max-w-5xl mx-auto relative overflow-hidden bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 rounded-3xl p-8 sm:p-10 shadow-xl shadow-indigo-500/20">
+
+            <div class="absolute -right-10 -top-20 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
+            <div class="absolute -left-10 -bottom-20 w-64 h-64 bg-pink-400/20 rounded-full blur-3xl"></div>
+
+            <div class="relative z-10 flex flex-col sm:flex-row items-center justify-between gap-6">
+
+                <div class="text-center sm:text-left space-y-3">
+                    <span class="text-[10px] font-bold tracking-widest text-blue-100 uppercase">
+                        Uji Pemahamanmu
+                    </span>
+
+                    <h3 class="text-2xl sm:text-3xl font-extrabold text-white">
+                        Siap Menghadapi Tantangan?
+                    </h3>
+
+                    <p class="text-xs text-blue-100 leading-relaxed max-w-lg">
+                        Uji kemampuanmu melalui latihan dan evaluasi interaktif.
+                        Temukan seberapa jauh pemahamanmu berkembang.
+                    </p>
+                </div>
+
+                <div class="w-20 h-20 rounded-3xl bg-white/15 border border-white/20 flex items-center justify-center text-white text-4xl shrink-0 rotate-6">
+                    <i class="fa-solid fa-gamepad"></i>
                 </div>
 
             </div>
         </div>
-    </section>
 
-    <section id="fitur" class="py-24 relative overflow-hidden">
-        {{-- Hiasan Glow Latar Belakang --}}
-        <div class="absolute top-1/2 right-10 -translate-y-1/2 w-[500px] h-[300px] bg-blue-500/10 blur-[130px] pointer-events-none"></div>
 
-        <div class="max-w-7xl mx-auto px-6 lg:px-8 reveal-view relative z-10">
-            
-            {{-- Judul Utama Section (Section Header) --}}
-            <div class="max-w-3xl mx-auto text-center mb-16 space-y-3">
-                <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 text-xs font-semibold">
-                    <i class="fa-solid fa-microchip text-blue-500"></i>
-                    <span>Fitur Unggulan Platform</span>
+        {{-- Dashboard dan Ranking --}}
+        <div class="grid lg:grid-cols-12 gap-8 items-start">
+
+            {{-- Dashboard Preview tanpa gambar --}}
+            <div class="lg:col-span-7">
+
+                <div class="bg-white dark:bg-[#120f24] p-5 sm:p-7 rounded-3xl border border-purple-100 dark:border-white/5 shadow-xl">
+
+                    <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+                        <div>
+                            <span class="text-[10px] font-bold text-indigo-500 uppercase tracking-widest">
+                                Student Overview
+                            </span>
+                            <h3 class="text-lg font-extrabold text-slate-900 dark:text-white mt-1">
+                                Dashboard Pembelajaran
+                            </h3>
+                        </div>
+
+                        <span class="px-3 py-1.5 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold">
+                            <i class="fa-solid fa-circle text-[6px] mr-1"></i>
+                            Live Preview
+                        </span>
+                    </div>
+
+                    {{-- Welcome Card --}}
+                    <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 p-5 text-white mb-5">
+                        <div class="absolute -right-5 -bottom-10 text-white/10 text-8xl">
+                            <i class="fa-solid fa-graduation-cap"></i>
+                        </div>
+
+                        <div class="relative z-10">
+                            <p class="text-[10px] text-indigo-100 font-medium">SELAMAT DATANG KEMBALI</p>
+                            <h4 class="text-xl font-extrabold mt-1">Halo, Pelajar Hebat! 👋</h4>
+                            <p class="text-[10px] text-indigo-100 mt-2">
+                                Terus belajar dan tingkatkan pencapaianmu.
+                            </p>
+
+                            <div class="mt-5 max-w-xs">
+                                <div class="flex justify-between text-[10px] mb-2">
+                                    <span>Progress Level 3</span>
+                                    <span>64%</span>
+                                </div>
+                                <div class="h-2 bg-black/20 rounded-full overflow-hidden">
+                                    <div class="h-full w-[64%] bg-amber-400 rounded-full"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Statistik --}}
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+
+                        <div class="p-3 rounded-xl bg-blue-50 dark:bg-blue-500/10">
+                            <i class="fa-solid fa-book text-blue-500 text-sm"></i>
+                            <p class="text-lg font-extrabold text-slate-900 dark:text-white mt-2">05</p>
+                            <p class="text-[9px] text-slate-500 dark:text-slate-400">Materi</p>
+                        </div>
+
+                        <div class="p-3 rounded-xl bg-purple-50 dark:bg-purple-500/10">
+                            <i class="fa-solid fa-bolt text-purple-500 text-sm"></i>
+                            <p class="text-lg font-extrabold text-slate-900 dark:text-white mt-2">320</p>
+                            <p class="text-[9px] text-slate-500 dark:text-slate-400">Total XP</p>
+                        </div>
+
+                        <div class="p-3 rounded-xl bg-pink-50 dark:bg-pink-500/10">
+                            <i class="fa-solid fa-award text-pink-500 text-sm"></i>
+                            <p class="text-lg font-extrabold text-slate-900 dark:text-white mt-2">03</p>
+                            <p class="text-[9px] text-slate-500 dark:text-slate-400">Badge</p>
+                        </div>
+
+                        <div class="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-500/10">
+                            <i class="fa-solid fa-check-circle text-emerald-500 text-sm"></i>
+                            <p class="text-lg font-extrabold text-slate-900 dark:text-white mt-2">08</p>
+                            <p class="text-[9px] text-slate-500 dark:text-slate-400">Selesai</p>
+                        </div>
+
+                    </div>
+
+                    {{-- Aktivitas --}}
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between">
+                            <h4 class="text-xs font-extrabold text-slate-900 dark:text-white">
+                                Aktivitas Belajar
+                            </h4>
+                            <span class="text-[9px] text-indigo-500 font-bold">Lihat Semua</span>
+                        </div>
+
+                        <div class="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-white/5">
+                            <div class="w-9 h-9 rounded-lg bg-blue-500/10 text-blue-500 flex items-center justify-center">
+                                <i class="fa-solid fa-code text-xs"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-[11px] font-bold text-slate-800 dark:text-white">
+                                    Pengenalan Percabangan
+                                </p>
+                                <p class="text-[9px] text-slate-400">Materi pembelajaran</p>
+                            </div>
+                            <span class="text-[10px] font-bold text-emerald-500">Selesai</span>
+                        </div>
+
+                        <div class="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-white/5">
+                            <div class="w-9 h-9 rounded-lg bg-purple-500/10 text-purple-500 flex items-center justify-center">
+                                <i class="fa-solid fa-puzzle-piece text-xs"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-[11px] font-bold text-slate-800 dark:text-white">
+                                    Latihan Logika Program
+                                </p>
+                                <p class="text-[9px] text-slate-400">Tantangan interaktif</p>
+                            </div>
+                            <span class="text-[10px] font-bold text-indigo-500">Berjalan</span>
+                        </div>
+
+                    </div>
                 </div>
-                <h2 class="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-                    Umpan Balik Cerdas & Deteksi Eror
-                </h2>
-                <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-                    Fitur umpan balik untuk membantu siswa memahami dan memperbaiki eror logika secara mandiri.
-                </p>
             </div>
 
-            <div class="grid lg:grid-cols-12 gap-12 items-center">
-                
-                {{-- Penjelasan Fitur --}}
-                <div class="lg:col-span-5 space-y-6">
-                    <span class="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase font-mono tracking-widest">Sistem Proteksi Logika</span>
-                    <h3 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight leading-tight">
-                        Umpan Balik Pintar Saat Terjadi Logika Eror
-                    </h3>
-                    <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                        Saat kode program Anda mengalami eror logika, asisten cerdas berbasis *Deep Learning* kami menyajikan petunjuk taktis eksplisit (*error clues*) guna memacu kemandirian berpikir siswa.
-                    </p>
-                    
-                    {{-- Box Alert Clue --}}
-                    <div class="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl flex gap-3 items-start shadow-sm hover:border-red-500/40 transition theme-transition">
-                        <div class="w-7 h-7 rounded-lg bg-red-500 text-white flex items-center justify-center text-xs mt-0.5 shrink-0">
-                            <i class="fa-solid fa-triangle-exclamation"></i>
+
+            {{-- Ranking --}}
+            <div class="lg:col-span-5 bg-white dark:bg-[#120f24] p-6 rounded-3xl border border-purple-100 dark:border-white/5 shadow-sm">
+
+                <div class="flex items-center justify-between mb-6">
+                    <div>
+                        <span class="text-[10px] font-bold text-amber-500 uppercase tracking-widest">
+                            Achievement
+                        </span>
+                        <h3 class="text-lg font-extrabold text-slate-900 dark:text-white mt-1">
+                            Ranking Siswa
+                        </h3>
+                    </div>
+
+                    <div class="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
+                        <i class="fa-solid fa-trophy"></i>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+
+                    {{-- Peringkat 1 --}}
+                    <div class="flex items-center gap-3 p-4 rounded-2xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200/70 dark:border-amber-500/20">
+                        <div class="w-9 h-9 rounded-xl bg-amber-400 text-white flex items-center justify-center font-extrabold">
+                            1
                         </div>
-                        <div class="space-y-1">
-                            <h4 class="text-xs font-bold text-red-600 dark:text-red-400">Logical Error Detected</h4>
-                            <p class="text-[11px] text-slate-600 dark:text-slate-400 font-mono leading-relaxed">
-                                Clue: Cek keselarasan operator perbandingan percabangan pada blok Nested If baris ke-4 Anda.
+                        <div class="flex-1">
+                            <p class="text-xs font-extrabold text-slate-900 dark:text-white">Ahmad Fauzi</p>
+                            <p class="text-[9px] text-slate-500">X RPL 1</p>
+                        </div>
+                        <span class="text-xs font-extrabold text-amber-600 dark:text-amber-400">3.120 XP</span>
+                    </div>
+
+                    {{-- Peringkat 2 --}}
+                    <div class="flex items-center gap-3 p-4 rounded-2xl bg-slate-50 dark:bg-white/5">
+                        <div class="w-9 h-9 rounded-xl bg-slate-300 text-white flex items-center justify-center font-extrabold">
+                            2
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-xs font-extrabold text-slate-900 dark:text-white">Risa Amalia</p>
+                            <p class="text-[9px] text-slate-500">X RPL 1</p>
+                        </div>
+                        <span class="text-xs font-extrabold text-slate-500">2.985 XP</span>
+                    </div>
+
+                    {{-- Peringkat 3 --}}
+                    <div class="flex items-center gap-3 p-4 rounded-2xl bg-slate-50 dark:bg-white/5">
+                        <div class="w-9 h-9 rounded-xl bg-orange-400 text-white flex items-center justify-center font-extrabold">
+                            3
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-xs font-extrabold text-slate-900 dark:text-white">Dimas Pratama</p>
+                            <p class="text-[9px] text-slate-500">X RPL 1</p>
+                        </div>
+                        <span class="text-xs font-extrabold text-slate-500">2.750 XP</span>
+                    </div>
+
+                </div>
+
+                <div class="mt-6 p-4 rounded-2xl bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border border-indigo-500/10">
+                    <div class="flex items-center gap-3">
+                        <i class="fa-solid fa-medal text-2xl text-indigo-500"></i>
+                        <div>
+                            <p class="text-xs font-extrabold text-slate-900 dark:text-white">
+                                Setiap usaha berarti!
+                            </p>
+                            <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-1">
+                                Selesaikan aktivitas untuk mengumpulkan XP dan meningkatkan level.
                             </p>
                         </div>
                     </div>
                 </div>
 
-                {{-- Terminal / Online Compiler Preview --}}
-                <div class="lg:col-span-7">
-                    <div class="bg-white dark:bg-[#120f24] rounded-2xl p-5 border border-purple-100 dark:border-white/5 shadow-xl neon-card-purple theme-transition">
-                        <div class="flex items-center justify-between mb-3 border-b border-purple-50 dark:border-white/5 pb-3">
-                            <div class="flex space-x-2">
-                                <span class="w-2.5 h-2.5 rounded-full bg-red-400"></span>
-                                <span class="w-2.5 h-2.5 rounded-full bg-yellow-400"></span>
-                                <span class="w-2.5 h-2.5 rounded-full bg-green-400"></span>
-                            </div>
-                            <span class="text-[10px] font-mono text-slate-400 flex items-center gap-1">
-                                <i class="fa-brands fa-python text-blue-500"></i> online_compiler_v2.py
-                            </span>
-                        </div>
-                        
-                        <div class="aspect-[16/10] bg-slate-950 rounded-xl p-5 flex flex-col justify-between font-mono text-xs shadow-inner">
-                            <div class="space-y-1 text-purple-400">
-                                <p class="text-slate-500"># Evaluasi Nilai Kritis</p>
-                                <p><span class="text-pink-500">if</span> skor_siswa &gt;= <span class="text-amber-400">80</span>:</p>
-                                <p class="pl-4 text-slate-300">status = <span class="text-emerald-400">"Problem Solved!"</span></p>
-                            </div>
-                            
-                            <div class="border-t border-white/5 pt-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-slate-400 text-[11px]">
-                                <span class="text-slate-500">Status: Menghitung Akurasi Percabangan...</span>
-                                <div class="flex items-center gap-2.5 bg-white/5 px-3 py-1.5 rounded-lg text-purple-300">
-                                    <div class="w-3.5 h-3.5 border-2 border-purple-500/30 border-t-purple-400 rounded-full animate-spin"></div>
-                                    <span class="text-[10px] tracking-wide uppercase">Initializing Compiler...</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
             </div>
         </div>
-    </section>
-
-    <section id="silabus" class="py-24 bg-purple-50/50 dark:bg-[#0c091f]/40 border-t border-purple-100 dark:border-purple-950/30 theme-transition">
-        <div class="max-w-4xl mx-auto px-6 lg:px-8 reveal-view">
-            <div class="text-center mb-16 space-y-2">
-                <span class="text-xs font-bold text-purple-600 dark:text-purple-400 uppercase font-mono tracking-widest">Silabus Kurikulum</span>
-                <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">4 Pilar Pembelajaran Konten Materi</h2>
-            </div>
-
-            <div class="grid grid-cols-1 gap-4">
-                <div class="bg-white dark:bg-[#120f24] p-5 rounded-2xl border border-purple-100 dark:border-white/5 flex gap-4 items-center shadow-sm hover:translate-x-1 transition duration-300 theme-transition">
-                    <div class="bg-blue-600 text-white font-mono text-xs font-bold px-3 py-1 rounded-lg">Materi 1</div>
-                    <span class="font-bold text-slate-900 dark:text-white text-sm">Pengenalan Percabangan</span>
-                </div>
-                <div class="bg-white dark:bg-[#120f24] p-5 rounded-2xl border border-purple-100 dark:border-white/5 flex gap-4 items-center shadow-sm hover:translate-x-1 transition duration-300 theme-transition">
-                    <div class="bg-purple-600 text-white font-mono text-xs font-bold px-3 py-1 rounded-lg">Materi 2</div>
-                    <span class="font-bold text-slate-900 dark:text-white text-sm">Fungsi dan Tujuan Percabangan</span>
-                </div>
-                <div class="bg-white dark:bg-[#120f24] p-5 rounded-2xl border border-purple-100 dark:border-white/5 flex gap-4 items-center shadow-sm hover:translate-x-1 transition duration-300 theme-transition">
-                    <div class="bg-pink-600 text-white font-mono text-xs font-bold px-3 py-1 rounded-lg">Materi 3</div>
-                    <span class="font-bold text-slate-900 dark:text-white text-sm">Jenis-Jenis Percabangan</span>
-                </div>
-                <div class="bg-white dark:bg-[#120f24] p-5 rounded-2xl border border-purple-100 dark:border-white/5 flex gap-4 items-center shadow-sm hover:translate-x-1 transition duration-300 theme-transition">
-                    <div class="bg-emerald-600 text-white font-mono text-xs font-bold px-3 py-1 rounded-lg">Materi 4</div>
-                    <span class="font-bold text-slate-900 dark:text-white text-sm">Aturan Penulisan (Sintaks) Percabangan</span>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <section id="evaluasi" class="py-24">
-        <div class="max-w-7xl mx-auto px-6 lg:px-8 space-y-16 reveal-view">
-            
-            <div class="max-w-4xl mx-auto bg-gradient-to-r from-purple-500/10 via-indigo-500/5 to-blue-500/10 dark:from-purple-900/30 dark:to-blue-900/30 border-2 border-purple-400/30 dark:border-purple-500/30 rounded-3xl p-6 flex flex-col sm:flex-row items-center justify-between gap-6 shadow-md theme-transition">
-                <div class="space-y-1 text-center sm:text-left">
-                    <h4 class="text-sm font-bold text-slate-900 dark:text-white flex items-center justify-center sm:justify-start gap-2">
-                        <i class="fa-solid fa-gamepad text-purple-600 dark:text-purple-400 text-base"></i> Kuis Interaktif & Adaptif
-                    </h4>
-                    <p class="text-xs text-slate-500 dark:text-slate-300">Sistem mengevaluasi pemahaman berkala Anda melalui tantangan berhadiah poin bintang.</p>
-                </div>
-                <button class="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white text-xs font-bold px-5 py-3 rounded-xl whitespace-nowrap cursor-pointer shadow-md shadow-purple-500/20 hover:scale-102 transition duration-300">Mulai Kuis</button>
-            </div>
-
-            <div class="grid lg:grid-cols-12 gap-8 items-start">
-                
-                <div class="lg:col-span-7 bg-white dark:bg-[#120f24] p-6 rounded-3xl border border-purple-100 dark:border-white/5 shadow-xl neon-card-blue theme-transition">
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2"><i class="fa-solid fa-chart-line text-blue-500"></i> Laporan Statistik Penggunaan Media</h3>
-                        <span class="text-[9px] font-mono font-bold px-2 py-0.5 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400">Dashboard View</span>
-                    </div>
-                    <div class="aspect-[16/10] rounded-2xl overflow-hidden bg-slate-900 border border-slate-200 dark:border-white/5 shadow-inner">
-                        <img src="{{ asset('images/dashboard-preview.jpg') }}" alt="Dashboard Analytics Preview" class="w-full h-full object-cover opacity-90">
-                    </div>
-                </div>
-
-                <div class="lg:col-span-5 bg-white dark:bg-[#120f24] p-6 rounded-3xl border border-purple-100 dark:border-white/5 shadow-sm space-y-4 theme-transition">
-                    <h3 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2"><i class="fa-solid fa-trophy text-amber-500"></i> Ranking Keterlibatan Siswa</h3>
-                    
-                    <div class="space-y-2">
-                        <div class="flex items-center justify-between p-3.5 bg-purple-50/50 dark:bg-white/5 rounded-xl text-xs theme-transition border border-purple-100/50 dark:border-transparent">
-                            <span class="font-bold text-slate-800 dark:text-slate-200">#1 Ahmad Fauzi</span>
-                            <span class="font-mono text-purple-600 dark:text-purple-400 font-extrabold">3,120 Pts</span>
-                        </div>
-                        <div class="flex items-center justify-between p-3.5 bg-purple-50/50 dark:bg-white/5 rounded-xl text-xs theme-transition border border-purple-100/50 dark:border-transparent">
-                            <span class="font-bold text-slate-800 dark:text-slate-200">#2 Risa Amalia</span>
-                            <span class="font-mono text-purple-600 dark:text-purple-400 font-extrabold">2,985 Pts</span>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-        </div>
-    </section>
+    </div>
+</section>
 
 @endsection
