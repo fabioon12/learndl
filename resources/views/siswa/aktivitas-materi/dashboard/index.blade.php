@@ -3,8 +3,6 @@
 
 @section('content')
 @php
-    // Dashboard ini menampilkan satu atau lebih dunia (Materi), bukan daftar Submateri.
-    // Kompatibel dengan controller lama yang mengirim $materis = $ruangMateri->submateris.
     $materis = isset($ruangMateri) && $ruangMateri
         ? collect([$ruangMateri])
         : collect($materis ?? [])->filter(fn ($item) => $item instanceof \App\Models\Materi)->values();
@@ -16,19 +14,35 @@
     $xpMisiSelesai = (int) ($xpMisiSelesai ?? $xpDiperoleh ?? 0);
 
     $xpNeeded = 1000;
-
     $level = intdiv((int) $totalXp, $xpNeeded) + 1;
-
     $xpInLevel = $totalXp % $xpNeeded;
 
-    // Persentase progress level (0–100%)
-    $levelProgress = max(
-        0,
-        min(100, ($xpInLevel / $xpNeeded) * 100)
-    );
-
+    $levelProgress = max(0, min(100, ($xpInLevel / $xpNeeded) * 100));
     $overall = max(0, min(100, (float) ($overallProgress ?? 0)));
     $playerName = $user->fullname ?? $user->name ?? 'Petualang';
+
+    // Hitung progres berdasarkan seluruh submateri pada dashboard ini.
+    $totalSubmateriDashboard = $materis->sum(
+        fn ($materi) => collect($materi->submateris ?? [])->count()
+    );
+
+    $totalCompletedDashboard = $materis->sum(
+        fn ($materi) => collect($materi->submateris ?? [])
+            ->filter(fn ($submateri) => in_array(
+                (string) $submateri->id,
+                $completedIds,
+                true
+            ))
+            ->count()
+    );
+
+    $allSubmateriCompleted = $totalSubmateriDashboard > 0
+        && $totalCompletedDashboard === $totalSubmateriDashboard;
+
+    // Penanda apakah dashboard sedang dibuka dari Ruang Belajar.
+    $isFromRuangBelajar = isset($ruangBelajar, $tahapan)
+        && $ruangBelajar
+        && $tahapan;
 @endphp
 
 <style>
@@ -91,62 +105,85 @@
      }"
      x-bind:class="typeof darkMode !== 'undefined' && darkMode ? 'quest-dark' : ''"
      @keydown.escape.window="closeMission()">
+
     <div class="mx-auto max-w-[1450px]">
+
         <header class="mb-6 flex flex-wrap items-end justify-between gap-4">
             <div>
                 <p class="text-xs font-black uppercase tracking-[.2em] text-violet-500">✦ Adventure Learning</p>
                 <h1 class="mt-1 text-2xl font-black sm:text-3xl">🗺️ Peta Petualangan</h1>
                 <p class="q-muted mt-2 text-sm">Halo, {{ $playerName }}! Selesaikan misi untuk membuka perjalanan berikutnya.</p>
             </div>
-            <span class="q-soft rounded-full px-4 py-2 text-xs font-extrabold">✨ {{ $totalCompleted }} / {{ $totalSubmateri }} misi selesai</span>
+            <span class="q-soft rounded-full px-4 py-2 text-xs font-extrabold">
+                ✨ {{ $totalCompleted ?? $totalCompletedDashboard }} / {{ $totalSubmateri ?? $totalSubmateriDashboard }} misi selesai
+            </span>
         </header>
 
         <div class="grid grid-cols-1 items-start gap-5 xl:grid-cols-[245px_minmax(0,1fr)_245px]">
+
             {{-- KIRI: PLAYER & XP --}}
             <aside class="order-2 space-y-4 xl:order-1 xl:sticky xl:top-5 xl:self-start">
                 <section class="q-card overflow-hidden p-5 text-center">
                     <div class="relative mx-auto mb-3 w-fit">
                         <div class="absolute -inset-2 rounded-3xl bg-violet-400/20 blur-lg"></div>
                         <img src="https://api.dicebear.com/7.x/bottts-neutral/svg?seed={{ urlencode($playerName) }}&backgroundColor=b6e3f4"
-                             alt="Avatar {{ $playerName }}" class="relative h-20 w-20 rounded-2xl border-2 border-violet-300 object-cover">
+                             alt="Avatar {{ $playerName }}"
+                             class="relative h-20 w-20 rounded-2xl border-2 border-violet-300 object-cover">
                         <span class="absolute -bottom-1 -right-1 h-4 w-4 rounded-full border-2 border-white bg-emerald-500"></span>
                     </div>
+
                     <h2 class="truncate text-base font-black" title="{{ $playerName }}">{{ $playerName }}</h2>
                     <p class="q-muted mt-1 text-xs">Penjelajah Pengetahuan</p>
                     <span class="mt-3 inline-flex rounded-full bg-violet-100 px-3 py-1 text-xs font-black text-violet-700">🏆 LEVEL {{ $level }}</span>
+
                     <div class="q-soft mt-5 rounded-2xl p-4 text-left">
                         <div class="mb-2 flex items-center justify-between gap-2 text-xs font-bold">
-                            <span>Progress Level</span><span class="text-violet-500">{{ round($levelProgress) }}%</span>
+                            <span>Progress Level</span>
+                            <span class="text-violet-500">{{ round($levelProgress) }}%</span>
                         </div>
                         <div class="q-progress"><div style="width:{{ $levelProgress }}%"></div></div>
                         <p class="q-muted mt-2 text-[11px]">{{ number_format($xpInLevel) }} / {{ number_format($xpNeeded) }} XP</p>
                     </div>
+
                     <div class="mt-3 rounded-2xl border border-amber-300/30 bg-amber-400/10 p-4 text-left">
                         <p class="text-xs font-black text-amber-600 dark:text-amber-300">⚡ TOTAL XP</p>
-                        <p class="mt-1 text-2xl font-black">  {{ number_format($xpMisiSelesai, 0, ',', '.') }} <span class="text-sm text-amber-500">XP</span></p>
+                        <p class="mt-1 text-2xl font-black">{{ number_format($xpMisiSelesai, 0, ',', '.') }} <span class="text-sm text-amber-500">XP</span></p>
                         <p class="q-muted mt-1 text-[11px]">Hadiah dari misi yang kamu taklukkan</p>
                     </div>
+
                     <a href="{{ route('siswa.ruang-materi.index') }}" class="q-back mt-4 text-left">
-                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-700"><i class="fa-solid fa-arrow-left"></i></span>
-                        <span><span class="block">Kembali ke Dashboard</span><span class="q-muted mt-0.5 block text-[10px] font-medium">Halaman ruang belajar</span></span>
+                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-700">
+                            <i class="fa-solid fa-arrow-left"></i>
+                        </span>
+                        <span>
+                            <span class="block">Kembali ke Dashboard</span>
+                            <span class="q-muted mt-0.5 block text-[10px] font-medium">Halaman ruang materi</span>
+                        </span>
                     </a>
                 </section>
             </aside>
 
             {{-- TENGAH: MAP --}}
             <main class="order-1 min-w-0 space-y-5 xl:order-2">
+
                 @forelse($materis as $materi)
                     @php
                         $submateris = collect($materi->submateris ?? [])->values();
                         $total = $submateris->count();
-                        $completedCount = $submateris->filter(fn ($sub) => in_array((string) $sub->id, $completedIds, true))->count();
+
+                        $completedCount = $submateris->filter(
+                            fn ($sub) => in_array((string) $sub->id, $completedIds, true)
+                        )->count();
+
                         $percentage = $total ? round($completedCount / $total * 100) : 0;
                         $previousCompleted = true;
                         $positions = [50, 32, 50, 68, 50, 32, 50, 68];
                         $rowHeight = 142;
                         $mapHeight = max(155, $total * $rowHeight + 10);
                     @endphp
+
                     <section class="q-map">
+
                         <div class="flex flex-wrap items-center justify-between gap-3 bg-gradient-to-r from-violet-700 to-fuchsia-600 px-5 py-5 text-white sm:px-7">
                             <div class="min-w-0">
                                 <p class="text-[10px] font-black uppercase tracking-[.18em] text-violet-100">✦ Dunia Pembelajaran</p>
@@ -155,13 +192,17 @@
                             </div>
                             <span class="rounded-xl border border-white/30 bg-white/15 px-4 py-2 text-sm font-black">{{ $percentage }}%</span>
                         </div>
+
                         <div class="px-3 py-7 sm:px-7">
                             @if($total > 0)
+
                                 <div class="text-center">
                                     <span class="q-soft inline-flex rounded-full px-4 py-2 text-xs font-black">🏁 START</span>
                                     <p class="q-muted mt-3 text-xs">Pilih checkpoint untuk melihat detail misi!</p>
                                 </div>
+
                                 <div class="q-path mt-7" style="height:{{ $mapHeight }}px">
+
                                     <svg class="q-lines" viewBox="0 0 100 {{ $mapHeight }}" preserveAspectRatio="none" aria-hidden="true">
                                         @foreach($submateris as $index => $submateri)
                                             @if($index > 0)
@@ -170,142 +211,268 @@
                                                     $currCompleted = in_array((string) $submateri->id, $completedIds, true);
                                                     $lineState = $prevCompleted && $currCompleted ? 'complete' : ($prevCompleted ? 'next' : '');
                                                 @endphp
-                                                <line x1="{{ $positions[($index - 1) % count($positions)] }}" y1="{{ ($index - 1) * $rowHeight + 66 }}"
-                                                      x2="{{ $positions[$index % count($positions)] }}" y2="{{ $index * $rowHeight + 66 }}"
-                                                      class="{{ $lineState }}" vector-effect="non-scaling-stroke" />
+
+                                                <line x1="{{ $positions[($index - 1) % count($positions)] }}"
+                                                      y1="{{ ($index - 1) * $rowHeight + 66 }}"
+                                                      x2="{{ $positions[$index % count($positions)] }}"
+                                                      y2="{{ $index * $rowHeight + 66 }}"
+                                                      class="{{ $lineState }}"
+                                                      vector-effect="non-scaling-stroke" />
                                             @endif
                                         @endforeach
                                     </svg>
+
                                     @foreach($submateris as $index => $submateri)
                                         @php
                                             $isCompleted = in_array((string) $submateri->id, $completedIds, true);
                                             $isUnlocked = $previousCompleted || $isCompleted;
                                             $isActive = $isUnlocked && !$isCompleted;
                                             $previousCompleted = $isCompleted;
+
                                             $state = $isCompleted ? 'done' : ($isActive ? 'active' : 'locked');
                                             $position = $positions[$index % count($positions)];
-                                            $missionUrl = $isUnlocked ? route('siswa.ruang-materi.dashboard-belajar.submateri.show', ['materi' => $materi->id, 'submateri' => $submateri->id]) : null;
+                                            $missionUrl = null;
+
+                                            if ($isUnlocked) {
+                                                if ($isFromRuangBelajar) {
+                                                    $missionUrl = route(
+                                                        'siswa.ruang-materi.ruang-belajar.submateri.show',
+                                                        [
+                                                            'ruangBelajar' => $ruangBelajar->id,
+                                                            'tahapan' => $tahapan->id,
+                                                            'materi' => $materi->id,
+                                                            'submateri' => $submateri->id,
+                                                        ]
+                                                    );
+                                                } else {
+                                                    $missionUrl = route(
+                                                        'siswa.ruang-materi.dashboard-belajar.submateri.show',
+                                                        [
+                                                            'materi' => $materi->id,
+                                                            'submateri' => $submateri->id,
+                                                        ]
+                                                    );
+                                                }
+                                            }
                                         @endphp
+
                                         <div class="q-node" style="top:{{ $index * $rowHeight }}px;left:{{ $position }}%">
-                                            <span class="q-status {{ $state }}">{{ $isCompleted ? '✓ SELESAI' : ($isActive ? '▶ MAIN' : '🔒 TERKUNCI') }}</span>
+                                            <span class="q-status {{ $state }}">
+                                                {{ $isCompleted ? '✓ SELESAI' : ($isActive ? '▶ MAIN' : '🔒 TERKUNCI') }}
+                                            </span>
+
                                             @if($isUnlocked)
-                                                <button type="button" class="q-hex {{ $state }}"
-                                                        @click="showMission({ title: @js($submateri->judul_sub), number: {{ $index + 1 }}, xp: {{ (int) ($submateri->xp_reward ?? 0) }}, done: {{ $isCompleted ? 'true' : 'false' }}, url: @js($missionUrl) })"
+                                                <button type="button"
+                                                        class="q-hex {{ $state }}"
+                                                        @click="showMission({
+                                                            title: @js($submateri->judul_sub),
+                                                            number: {{ $index + 1 }},
+                                                            xp: {{ (int) ($submateri->xp_reward ?? 0) }},
+                                                            done: {{ $isCompleted ? 'true' : 'false' }},
+                                                            url: @js($missionUrl)
+                                                        })"
                                                         aria-label="Lihat misi {{ $submateri->judul_sub }}">
                                                     <span aria-hidden="true">{{ $isCompleted ? '✓' : '✦' }}</span>
                                                 </button>
                                             @else
-                                                <button type="button" class="q-hex locked" disabled title="Selesaikan misi sebelumnya" aria-label="Misi {{ $submateri->judul_sub }} terkunci">
+                                                <button type="button"
+                                                        class="q-hex locked"
+                                                        disabled
+                                                        title="Selesaikan misi sebelumnya"
+                                                        aria-label="Misi {{ $submateri->judul_sub }} terkunci">
                                                     <i class="fa-solid fa-lock text-xl" aria-hidden="true"></i>
                                                 </button>
                                             @endif
+
                                             <p class="q-label {{ $state }}">{{ $submateri->judul_sub }}</p>
-                                            @if($isActive)<span class="mt-1 text-[10px] font-black text-amber-500">⚡ +{{ number_format($submateri->xp_reward ?? 0) }} XP</span>@endif
+
+                                            @if($isActive)
+                                                <span class="mt-1 text-[10px] font-black text-amber-500">
+                                                    ⚡ +{{ number_format($submateri->xp_reward ?? 0) }} XP
+                                                </span>
+                                            @endif
                                         </div>
                                     @endforeach
                                 </div>
-                                <div class="mt-3 border-t pt-6 text-center text-xs font-bold" style="border-color:var(--q-border);color:var(--q-muted)">
+
+                                <div class="mt-3 border-t pt-6 text-center text-xs font-bold"
+                                     style="border-color:var(--q-border);color:var(--q-muted)">
                                     {{ $percentage === 100 ? '🏆 Selamat! Semua misi di dunia ini selesai.' : '🏆 Selesaikan semua misi untuk menaklukkan dunia ini!' }}
                                 </div>
+
                             @else
-                                <div class="py-12 text-center"><div class="text-5xl">📖</div><h3 class="mt-3 font-black">Belum ada misi</h3><p class="q-muted mt-2 text-sm">Guru belum menambahkan submateri.</p></div>
+                                <div class="py-12 text-center">
+                                    <div class="text-5xl">📖</div>
+                                    <h3 class="mt-3 font-black">Belum ada misi</h3>
+                                    <p class="q-muted mt-2 text-sm">Guru belum menambahkan submateri.</p>
+                                </div>
                             @endif
                         </div>
                     </section>
+
                 @empty
-                    <div class="q-card px-5 py-16 text-center"><div class="text-5xl">🗺️</div><h2 class="mt-4 text-xl font-black">Petualangan belum dimulai</h2><p class="q-muted mt-2 text-sm">Pilih materi untuk memulai perjalananmu.</p><a href="{{ url('/siswa/eksplorasi') }}" class="mt-5 inline-flex rounded-xl bg-violet-600 px-5 py-3 text-sm font-bold text-white">Jelajahi Materi →</a></div>
-                @endforelse
-                 @if(isset($ruangBelajar, $tahapan)
-                    && $totalSubmateri > 0
-                    && $totalCompleted === $totalSubmateri)
-
-                    <div class="q-card border-green-300 p-6 text-center">
-
-                        <div class="mb-3 text-5xl">🏆</div>
-
-                        <h3 class="text-xl font-black text-green-600">
-                            Selamat! Seluruh Misi Selesai
-                        </h3>
-
-                        <p class="q-muted mt-3 text-sm">
-                            Kamu telah menyelesaikan seluruh submateri.
-                            Sekarang kamu bisa kembali ke Ruang Belajar
-                            untuk melanjutkan tahapan berikutnya.
-                        </p>
-
-                        <a href="{{ route('siswa.ruang-belajar.tahapan', $ruangBelajar->id) }}"
-                           class="mt-5 inline-flex items-center justify-center
-                                  rounded-xl bg-green-600 px-6 py-3
-                                  font-bold text-white hover:bg-green-700">
-
-                            <i class="fa-solid fa-arrow-right mr-2"></i>
-                            Lanjutkan Ruang Belajar
-
+                    <div class="q-card px-5 py-16 text-center">
+                        <div class="text-5xl">🗺️</div>
+                        <h2 class="mt-4 text-xl font-black">Petualangan belum dimulai</h2>
+                        <p class="q-muted mt-2 text-sm">Pilih materi untuk memulai perjalananmu.</p>
+                        <a href="{{ route('siswa.ruang-materi.eksplorasi') }}"
+                           class="mt-5 inline-flex rounded-xl bg-violet-600 px-5 py-3 text-sm font-bold text-white">
+                            Jelajahi Materi →
                         </a>
                     </div>
+                @endforelse
 
+                {{-- TOMBOL KEMBALI HANYA UNTUK AKSES DARI RUANG BELAJAR --}}
+                @if($isFromRuangBelajar && $allSubmateriCompleted)
+                    <div class="q-card relative overflow-hidden border border-green-300 p-6 text-center">
+
+                        <div class="absolute -right-8 -top-8 h-28 w-28 rounded-full bg-green-400/10"></div>
+                        <div class="absolute -bottom-8 -left-8 h-28 w-28 rounded-full bg-green-400/10"></div>
+
+                        <div class="relative">
+                            <div class="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-3xl bg-green-100 text-5xl">
+                                🏆
+                            </div>
+
+                            <span class="inline-flex rounded-full bg-green-100 px-4 py-1.5 text-xs font-black text-green-700">
+                                SEMUA MISI SELESAI
+                            </span>
+
+                            <h3 class="mt-4 text-xl font-black text-green-600">
+                                Selamat! Kamu Berhasil!
+                            </h3>
+
+                            <p class="q-muted mx-auto mt-3 max-w-md text-sm leading-relaxed">
+                                Kamu telah menyelesaikan seluruh submateri dalam tahapan
+                                <strong>{{ $tahapan->nama ?? $tahapan->judul ?? 'ini' }}</strong>.
+                                Sekarang kamu dapat kembali ke Ruang Belajar untuk
+                                melanjutkan tahapan pembelajaran berikutnya.
+                            </p>
+
+                            <div class="mx-auto mt-5 flex max-w-xs items-center justify-center gap-3 rounded-2xl bg-green-50 p-4 text-green-700">
+                                <i class="fa-solid fa-circle-check text-xl"></i>
+                                <div class="text-left">
+                                    <p class="text-sm font-black">
+                                        {{ $totalCompletedDashboard }} / {{ $totalSubmateriDashboard }} Submateri
+                                    </p>
+                                    <p class="text-xs">Seluruh pembelajaran telah diselesaikan</p>
+                                </div>
+                            </div>
+
+                            <a href="{{ route('siswa.ruang-belajar.tahapan', ['id' => $ruangBelajar->id]) }}"
+                               class="mt-6 inline-flex w-full max-w-sm items-center justify-center gap-3 rounded-2xl bg-green-600 px-6 py-4 text-sm font-black text-white shadow-lg shadow-green-600/20 transition hover:-translate-y-1 hover:bg-green-700">
+                                <i class="fa-solid fa-arrow-left"></i>
+                                KEMBALI KE RUANG BELAJAR
+                            </a>
+                        </div>
+                    </div>
                 @endif
+
             </main>
 
             {{-- KANAN: STATISTIK & PANDUAN --}}
             <aside class="order-3 space-y-4 xl:sticky xl:top-5 xl:self-start">
+
                 <section class="q-card p-5">
                     <h2 class="font-black">📊 Progres Petualangan</h2>
                     <p class="mt-4 text-3xl font-black text-violet-500">{{ round($overall) }}%</p>
                     <div class="q-progress mt-3"><div style="width:{{ $overall }}%"></div></div>
                     <p class="q-muted mt-2 text-xs">Total perjalanan yang diselesaikan</p>
+
                     <div class="mt-5 space-y-3 border-t pt-4 text-sm" style="border-color:var(--q-border)">
-                        <div class="flex justify-between"><span class="q-muted">📚 Dunia</span><strong>{{ $materis->count() }}</strong></div>
-                        <div class="flex justify-between"><span class="q-muted">⭐ Misi selesai</span><strong>{{ $totalCompleted }}</strong></div>
-                        <div class="flex justify-between"><span class="q-muted">🎯 Total misi</span><strong>{{ $totalSubmateri }}</strong></div>
+                        <div class="flex justify-between">
+                            <span class="q-muted">📚 Dunia</span>
+                            <strong>{{ $materis->count() }}</strong>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="q-muted">⭐ Misi selesai</span>
+                            <strong>{{ $totalCompleted ?? $totalCompletedDashboard }}</strong>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="q-muted">🎯 Total misi</span>
+                            <strong>{{ $totalSubmateri ?? $totalSubmateriDashboard }}</strong>
+                        </div>
                     </div>
                 </section>
+
                 <section class="q-card p-5">
                     <h2 class="font-black">🎮 Panduan Peta</h2>
                     <div class="mt-4 space-y-3 text-xs">
-                        <p class="flex items-center gap-3"><span class="h-3 w-3 rounded-full bg-green-500"></span><span class="q-muted">Hijau — misi selesai</span></p>
-                        <p class="flex items-center gap-3"><span class="h-3 w-3 rounded-full bg-purple-500"></span><span class="q-muted">Ungu — misi aktif</span></p>
-                        <p class="flex items-center gap-3"><span class="h-3 w-3 rounded-full bg-slate-400"></span><span class="q-muted">Abu-abu — misi terkunci</span></p>
+                        <p class="flex items-center gap-3">
+                            <span class="h-3 w-3 rounded-full bg-green-500"></span>
+                            <span class="q-muted">Hijau — misi selesai</span>
+                        </p>
+                        <p class="flex items-center gap-3">
+                            <span class="h-3 w-3 rounded-full bg-purple-500"></span>
+                            <span class="q-muted">Ungu — misi aktif</span>
+                        </p>
+                        <p class="flex items-center gap-3">
+                            <span class="h-3 w-3 rounded-full bg-slate-400"></span>
+                            <span class="q-muted">Abu-abu — misi terkunci</span>
+                        </p>
                     </div>
-                    <p class="q-muted mt-5 text-xs leading-relaxed">Klik misi yang terbuka untuk melihat detail dan mulai belajar. Misi berikutnya terbuka setelah misi sebelumnya selesai.</p>
+                    <p class="q-muted mt-5 text-xs leading-relaxed">
+                        Klik misi yang terbuka untuk melihat detail dan mulai belajar.
+                        Misi berikutnya terbuka setelah misi sebelumnya selesai.
+                    </p>
                 </section>
+
             </aside>
         </div>
     </div>
 
-    {{-- MODAL: gunakan state Alpine lokal, tanpa mengubah route atau database --}}
+    {{-- MODAL DETAIL MISI --}}
     <template x-if="selected !== null">
         <div class="q-modal-overlay" @click.self="closeMission()" role="presentation">
             <section class="q-modal relative" role="dialog" aria-modal="true" aria-labelledby="quest-dialog-title">
-                <button type="button" @click="closeMission()" aria-label="Tutup detail misi"
-                        class="q-soft absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-xl">✕</button>
+
+                <button type="button"
+                        @click="closeMission()"
+                        aria-label="Tutup detail misi"
+                        class="q-soft absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-xl">
+                    ✕
+                </button>
+
                 <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl text-3xl"
                      :class="selected.done ? 'bg-green-100 text-green-700' : 'bg-violet-100 text-violet-700'">
                     <span x-text="selected.done ? '✓' : '✦'"></span>
                 </div>
-                <p class="mt-5 text-center text-xs font-black uppercase tracking-widest text-violet-500" x-text="'MISI ' + String(selected.number).padStart(2, '0')"></p>
-                <h2 id="quest-dialog-title" class="mt-2 text-center text-xl font-black" x-text="selected.title"></h2>
-                <p class="q-muted mt-3 text-center text-sm" x-text="selected.done ? 'Misi ini sudah kamu selesaikan. Kamu bisa mempelajarinya kembali.' : 'Siap menaklukkan tantangan berikutnya?' "></p>
-                <div class="q-soft mx-auto mt-5 w-fit rounded-full px-4 py-2 text-xs font-black text-amber-600"><span x-text="'⚡ +' + selected.xp + ' XP'"></span></div>
-                <a class="q-action mt-6" :href="selected.url"><i class="fa-solid fa-play"></i><span x-text="selected.done ? 'Pelajari Lagi' : 'Mulai Misi'"></span></a>
-                <button type="button" @click="closeMission()" class="q-muted mt-4 w-full py-2 text-center text-sm font-bold">Nanti Saja</button>
+
+                <p class="mt-5 text-center text-xs font-black uppercase tracking-widest text-violet-500"
+                   x-text="'MISI ' + String(selected.number).padStart(2, '0')"></p>
+
+                <h2 id="quest-dialog-title"
+                    class="mt-2 text-center text-xl font-black"
+                    x-text="selected.title"></h2>
+
+                <p class="q-muted mt-3 text-center text-sm"
+                   x-text="selected.done ? 'Misi ini sudah kamu selesaikan. Kamu bisa mempelajarinya kembali.' : 'Siap menaklukkan tantangan berikutnya?'"></p>
+
+                <div class="q-soft mx-auto mt-5 w-fit rounded-full px-4 py-2 text-xs font-black text-amber-600">
+                    <span x-text="'⚡ +' + selected.xp + ' XP'"></span>
+                </div>
+
+                <a class="q-action mt-6" :href="selected.url">
+                    <i class="fa-solid fa-play"></i>
+                    <span x-text="selected.done ? 'Pelajari Lagi' : 'Mulai Misi'"></span>
+                </a>
+
+                <button type="button"
+                        @click="closeMission()"
+                        class="q-muted mt-4 w-full py-2 text-center text-sm font-bold">
+                    Nanti Saja
+                </button>
+
             </section>
         </div>
     </template>
 </div>
 
-
-
 @if(session()->has('earned_xp') && session('earned_xp') > 0)
-
 <script>
 window.addEventListener('load', function () {
-
     const earnedXp = Number(@json(session('earned_xp')));
-
-    const submateri = @json(
-        session('completed_submateri', 'Submateri')
-    );
+    const submateri = @json(session('completed_submateri', 'Submateri'));
 
     if (typeof window.Swal === 'undefined') {
         console.error('SweetAlert2 belum tersedia.');
@@ -318,27 +485,20 @@ window.addEventListener('load', function () {
         text: 'Selamat! Kamu menyelesaikan ' +
               submateri + ' dan mendapatkan +' +
               earnedXp + ' XP!',
-
         background: '#ffffff',
         color: '#1f2937',
-
         confirmButtonText: 'LANJUT BELAJAR →',
         confirmButtonColor: '#eab308',
-
         customClass: {
             popup: 'rounded-3xl',
             title: 'font-extrabold',
             confirmButton: 'rounded-xl font-bold px-6 py-3'
         },
-
         buttonsStyling: true,
         allowOutsideClick: false
     });
-
 });
 </script>
-
 @endif
-
 
 @endsection

@@ -36,14 +36,14 @@
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
             <div class="mb-2 flex flex-wrap items-center gap-2 text-sm text-gray-400">
-                <a href="{{ route('ruang-ujian.index') }}"
+                <a href="{{ route('guru.ruang-ujian.index') }}"
                    class="transition hover:text-indigo-600">
                     Ruang Ujian
                 </a>
 
                 <i class="fa-solid fa-chevron-right text-[10px]"></i>
 
-                <a href="{{ route('ruang-ujian.show', $ruangUjian->id) }}"
+                <a href="{{ route('guru.ruang-ujian.show', $ruangUjian->id) }}"
                    class="transition hover:text-indigo-600">
                     Detail Ujian
                 </a>
@@ -62,7 +62,7 @@
             </p>
         </div>
 
-        <a href="{{ route('ruang-ujian.show', $ruangUjian->id) }}"
+        <a href="{{ route('guru.ruang-ujian.show', $ruangUjian->id) }}"
            class="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-600 shadow-sm transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-600">
             <i class="fa-solid fa-arrow-left"></i>
             Kembali ke Detail
@@ -130,7 +130,7 @@
         </div>
     </div>
 
-    <form action="{{ route('ruang-ujian.update', $ruangUjian->id) }}" method="POST">
+    <form action="{{ route('guru.ruang-ujian.update', $ruangUjian->id) }}" method="POST">
         @csrf
         @method('PUT')
 
@@ -412,7 +412,7 @@
                 {{-- TOMBOL AKSI --}}
                 <div class="flex flex-col-reverse justify-end gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:flex-row sm:p-5">
 
-                    <a href="{{ route('ruang-ujian.show', $ruangUjian->id) }}"
+                    <a href="{{ route('guru.ruang-ujian.show', $ruangUjian->id) }}"
                        class="inline-flex items-center justify-center rounded-xl border border-gray-200 px-5 py-3 text-sm font-semibold text-gray-600 transition hover:bg-gray-50">
                         Batal
                     </a>
@@ -511,7 +511,7 @@
                         Total EXP dihitung dari akumulasi EXP seluruh soal. Mengubah konfigurasi ruang ujian tidak otomatis mengubah nilai EXP pada masing-masing soal.
                     </p>
 
-                    <a href="{{ route('ruang-ujian.show', $ruangUjian->id) }}"
+                    <a href="{{ route('guru.ruang-ujian.show', $ruangUjian->id) }}"
                        class="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:text-indigo-700">
                         Lihat detail ruang ujian
                         <i class="fa-solid fa-arrow-right text-[10px]"></i>

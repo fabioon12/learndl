@@ -861,9 +861,507 @@
     </div>
 
 </div>
+{{-- MODAL PANDUAN BELAJAR --}}
+<div
+    id="modalPanduanBelajar"
+    class="fixed inset-0 z-[9999] hidden items-center justify-center
+           bg-slate-950/70 backdrop-blur-sm p-4"
+    onclick="if(event.target === this) closePanduanBelajar()"
+>
+    <div
+        class="relative w-full max-w-2xl max-h-[90vh]
+               bg-white dark:bg-slate-900
+               rounded-3xl shadow-2xl overflow-hidden
+               flex flex-col animate-modal"
+    >
 
+        {{-- HEADER --}}
+        <div class="relative overflow-hidden bg-gradient-to-br
+                    from-violet-700 via-purple-700 to-indigo-800
+                    px-6 py-6 sm:px-8">
+
+            <div class="absolute -top-16 -right-10 w-48 h-48
+                        rounded-full bg-white/10"></div>
+
+            <div class="absolute -bottom-20 -left-10 w-48 h-48
+                        rounded-full bg-white/10"></div>
+
+            <div class="relative flex items-start justify-between gap-4">
+
+                <div class="flex items-center gap-4">
+
+                    <div class="w-14 h-14 rounded-2xl
+                                bg-white/15 border border-white/20
+                                flex items-center justify-center
+                                text-white text-2xl">
+                        <i class="fas fa-graduation-cap"></i>
+                    </div>
+
+                    <div>
+                        <span class="text-xs font-bold uppercase
+                                     tracking-[0.18em] text-purple-200">
+                            Ruang Belajar
+                        </span>
+
+                        <h2 class="text-xl sm:text-2xl font-extrabold
+                                   text-white mt-1">
+                            Panduan Belajar
+                        </h2>
+
+                        <p class="text-sm text-purple-100 mt-1">
+                            Kenali alur belajar dan raih pengalaman terbaik!
+                        </p>
+                    </div>
+
+                </div>
+
+                <button
+                    type="button"
+                    onclick="closePanduanBelajar()"
+                    class="w-9 h-9 shrink-0 rounded-xl
+                           bg-white/15 hover:bg-white/25
+                           text-white transition flex items-center justify-center"
+                    aria-label="Tutup panduan"
+                >
+                    <i class="fas fa-times"></i>
+                </button>
+
+            </div>
+        </div>
+
+
+        {{-- CONTENT --}}
+        <div class="flex-1 overflow-y-auto p-5 sm:p-7 space-y-7">
+
+            {{-- INTRO --}}
+            <div class="rounded-2xl border border-purple-200
+                        dark:border-purple-500/20
+                        bg-purple-50 dark:bg-purple-500/10 p-4">
+
+                <div class="flex gap-3">
+
+                    <div class="w-10 h-10 shrink-0 rounded-xl
+                                bg-purple-100 dark:bg-purple-500/20
+                                text-purple-700 dark:text-purple-300
+                                flex items-center justify-center">
+                        <i class="fas fa-lightbulb text-lg"></i>
+                    </div>
+
+                    <div>
+                        <h3 class="font-bold text-slate-800
+                                   dark:text-white text-sm">
+                            Sebelum Memulai Pembelajaran
+                        </h3>
+
+                        <p class="text-sm text-slate-600
+                                  dark:text-slate-300 mt-1 leading-relaxed">
+                            Ikuti setiap tahapan pembelajaran secara berurutan.
+                            Pahami instruksi, eksplorasi materi, dan selesaikan
+                            aktivitas untuk membuka tahapan berikutnya.
+                        </p>
+                    </div>
+
+                </div>
+            </div>
+
+
+            {{-- LANGKAH BELAJAR --}}
+            <div>
+
+                <div class="flex items-center gap-2 mb-4">
+                    <i class="fas fa-route text-purple-600"></i>
+
+                    <h3 class="font-bold text-slate-800
+                               dark:text-white">
+                        Langkah-Langkah Belajar
+                    </h3>
+                </div>
+
+                <div class="relative space-y-5">
+
+                    {{-- STEP 1 --}}
+                    <div class="flex gap-4">
+
+                        <div class="relative flex flex-col items-center">
+                            <div class="w-11 h-11 rounded-2xl
+                                        bg-purple-100 dark:bg-purple-500/20
+                                        text-purple-700 dark:text-purple-300
+                                        flex items-center justify-center">
+                                <i class="fas fa-book-open"></i>
+                            </div>
+
+                            <div class="absolute top-12 w-0.5 h-8
+                                        bg-slate-200 dark:bg-slate-700"></div>
+                        </div>
+
+                        <div class="flex-1 pb-3">
+                            <h4 class="font-bold text-sm text-slate-800
+                                       dark:text-white">
+                                1. Kenali Ruang Belajar
+                            </h4>
+
+                            <p class="text-sm text-slate-500
+                                      dark:text-slate-400 mt-1 leading-relaxed">
+                                Perhatikan judul, deskripsi, dan tujuan
+                                pembelajaran agar kamu memahami materi
+                                yang akan dipelajari.
+                            </p>
+                        </div>
+
+                    </div>
+
+
+                    {{-- STEP 2 --}}
+                    <div class="flex gap-4">
+
+                        <div class="relative flex flex-col items-center">
+                            <div class="w-11 h-11 rounded-2xl
+                                        bg-purple-100 dark:bg-purple-500/20
+                                        text-purple-700 dark:text-purple-300
+                                        flex items-center justify-center">
+                                <i class="fas fa-map-signs"></i>
+                            </div>
+
+                            <div class="absolute top-12 w-0.5 h-8
+                                        bg-slate-200 dark:bg-slate-700"></div>
+                        </div>
+
+                        <div class="flex-1 pb-3">
+                            <h4 class="font-bold text-sm text-slate-800
+                                       dark:text-white">
+                                2. Ikuti Urutan Tahapan
+                            </h4>
+
+                            <p class="text-sm text-slate-500
+                                      dark:text-slate-400 mt-1 leading-relaxed">
+                                Mulai dari tahapan pertama. Selesaikan
+                                setiap tahapan untuk membuka tahapan
+                                pembelajaran berikutnya.
+                            </p>
+                        </div>
+
+                    </div>
+
+
+                    {{-- STEP 3 --}}
+                    <div class="flex gap-4">
+
+                        <div class="relative flex flex-col items-center">
+                            <div class="w-11 h-11 rounded-2xl
+                                        bg-purple-100 dark:bg-purple-500/20
+                                        text-purple-700 dark:text-purple-300
+                                        flex items-center justify-center">
+                                <i class="fas fa-mouse-pointer"></i>
+                            </div>
+
+                            <div class="absolute top-12 w-0.5 h-8
+                                        bg-slate-200 dark:bg-slate-700"></div>
+                        </div>
+
+                        <div class="flex-1 pb-3">
+                            <h4 class="font-bold text-sm text-slate-800
+                                       dark:text-white">
+                                3. Pilih Tahapan Pembelajaran
+                            </h4>
+
+                            <p class="text-sm text-slate-500
+                                      dark:text-slate-400 mt-1 leading-relaxed">
+                                Klik ikon tahapan yang aktif untuk melihat
+                                informasi dan memulai aktivitas belajar.
+                            </p>
+                        </div>
+
+                    </div>
+
+
+                    {{-- STEP 4 --}}
+                    <div class="flex gap-4">
+
+                        <div class="relative flex flex-col items-center">
+                            <div class="w-11 h-11 rounded-2xl
+                                        bg-purple-100 dark:bg-purple-500/20
+                                        text-purple-700 dark:text-purple-300
+                                        flex items-center justify-center">
+                                <i class="fas fa-brain"></i>
+                            </div>
+
+                            <div class="absolute top-12 w-0.5 h-8
+                                        bg-slate-200 dark:bg-slate-700"></div>
+                        </div>
+
+                        <div class="flex-1 pb-3">
+                            <h4 class="font-bold text-sm text-slate-800
+                                       dark:text-white">
+                                4. Kerjakan Aktivitas Belajar
+                            </h4>
+
+                            <p class="text-sm text-slate-500
+                                      dark:text-slate-400 mt-1 leading-relaxed">
+                                Pahami stimulus, eksplorasi materi,
+                                aplikasikan pengetahuan, dan lakukan
+                                evaluasi terhadap hasil belajarmu.
+                            </p>
+                        </div>
+
+                    </div>
+
+
+                    {{-- STEP 5 --}}
+                    <div class="flex gap-4">
+
+                        <div class="w-11 h-11 shrink-0 rounded-2xl
+                                    bg-amber-100 dark:bg-amber-500/20
+                                    text-amber-600 dark:text-amber-300
+                                    flex items-center justify-center">
+                            <i class="fas fa-trophy"></i>
+                        </div>
+
+                        <div class="flex-1">
+                            <h4 class="font-bold text-sm text-slate-800
+                                       dark:text-white">
+                                5. Kumpulkan EXP
+                            </h4>
+
+                            <p class="text-sm text-slate-500
+                                      dark:text-slate-400 mt-1 leading-relaxed">
+                                Selesaikan aktivitas untuk memperoleh EXP
+                                dan tingkatkan progres belajarmu.
+                            </p>
+                        </div>
+
+                    </div>
+
+                </div>
+            </div>
+
+
+            {{-- STATUS TAHAPAN --}}
+            <div>
+
+                <div class="flex items-center gap-2 mb-4">
+                    <i class="fas fa-info-circle text-purple-600"></i>
+
+                    <h3 class="font-bold text-slate-800
+                               dark:text-white">
+                        Keterangan Status Tahapan
+                    </h3>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+
+                    {{-- AKTIF --}}
+                    <div class="rounded-2xl border border-purple-200
+                                dark:border-purple-500/20
+                                bg-purple-50 dark:bg-purple-500/10 p-3">
+
+                        <div class="w-10 h-10 rounded-xl bg-purple-600
+                                    text-white flex items-center justify-center
+                                    mb-3">
+                            <i class="fas fa-play"></i>
+                        </div>
+
+                        <h4 class="text-sm font-bold text-slate-800
+                                   dark:text-white">
+                            Aktif
+                        </h4>
+
+                        <p class="text-xs text-slate-500
+                                  dark:text-slate-400 mt-1 leading-relaxed">
+                            Tahapan dapat dimulai atau diulangi.
+                        </p>
+                    </div>
+
+
+                    {{-- SELESAI --}}
+                    <div class="rounded-2xl border border-green-200
+                                dark:border-green-500/20
+                                bg-green-50 dark:bg-green-500/10 p-3">
+
+                        <div class="w-10 h-10 rounded-xl bg-green-600
+                                    text-white flex items-center justify-center
+                                    mb-3">
+                            <i class="fas fa-check"></i>
+                        </div>
+
+                        <h4 class="text-sm font-bold text-slate-800
+                                   dark:text-white">
+                            Selesai
+                        </h4>
+
+                        <p class="text-xs text-slate-500
+                                  dark:text-slate-400 mt-1 leading-relaxed">
+                            Tahapan berhasil diselesaikan.
+                        </p>
+                    </div>
+
+
+                    {{-- TERKUNCI --}}
+                    <div class="rounded-2xl border border-slate-200
+                                dark:border-slate-700
+                                bg-slate-50 dark:bg-slate-800/70 p-3">
+
+                        <div class="w-10 h-10 rounded-xl bg-slate-400
+                                    text-white flex items-center justify-center
+                                    mb-3">
+                            <i class="fas fa-lock"></i>
+                        </div>
+
+                        <h4 class="text-sm font-bold text-slate-800
+                                   dark:text-white">
+                            Terkunci
+                        </h4>
+
+                        <p class="text-xs text-slate-500
+                                  dark:text-slate-400 mt-1 leading-relaxed">
+                            Menunggu tahapan sebelumnya selesai.
+                        </p>
+                    </div>
+
+                </div>
+            </div>
+
+
+            {{-- TIPS BELAJAR --}}
+            <div class="rounded-2xl border border-amber-200
+                        dark:border-amber-500/20
+                        bg-amber-50 dark:bg-amber-500/10 p-4">
+
+                <div class="flex gap-3">
+
+                    <div class="w-10 h-10 shrink-0 rounded-xl
+                                bg-amber-100 dark:bg-amber-500/20
+                                text-amber-600 dark:text-amber-300
+                                flex items-center justify-center">
+                        <i class="fas fa-lightbulb"></i>
+                    </div>
+
+                    <div class="flex-1">
+
+                        <h3 class="font-bold text-sm text-slate-800
+                                   dark:text-white">
+                            Tips Belajar
+                        </h3>
+
+                        <ul class="mt-2 space-y-2 text-sm text-slate-600
+                                   dark:text-slate-300">
+
+                            <li class="flex gap-2">
+                                <i class="fas fa-check-circle text-amber-500 mt-1"></i>
+                                Bacalah instruksi sebelum mengerjakan aktivitas.
+                            </li>
+
+                            <li class="flex gap-2">
+                                <i class="fas fa-check-circle text-amber-500 mt-1"></i>
+                                Analisis permasalahan sebelum menentukan jawaban.
+                            </li>
+
+                            <li class="flex gap-2">
+                                <i class="fas fa-check-circle text-amber-500 mt-1"></i>
+                                Cobalah mencari solusi ketika menemukan kesalahan.
+                            </li>
+
+                            <li class="flex gap-2">
+                                <i class="fas fa-check-circle text-amber-500 mt-1"></i>
+                                Selesaikan setiap tahapan dengan teliti.
+                            </li>
+
+                        </ul>
+
+                    </div>
+                </div>
+            </div>
+
+
+            {{-- PENUTUP --}}
+            <div class="text-center py-2">
+
+                <div class="text-3xl mb-2">🚀</div>
+
+                <h3 class="font-extrabold text-slate-800
+                           dark:text-white">
+                    Siap Memulai Pembelajaran?
+                </h3>
+
+                <p class="text-sm text-slate-500
+                          dark:text-slate-400 mt-1">
+                    Jelajahi setiap tahapan dan raih pengalaman belajar terbaik!
+                </p>
+
+            </div>
+
+        </div>
+
+
+        {{-- FOOTER --}}
+        <div class="border-t border-slate-200 dark:border-slate-700
+                    p-4 sm:px-7 flex items-center justify-between gap-3
+                    bg-white dark:bg-slate-900">
+
+            <span class="hidden sm:block text-xs text-slate-400">
+                <i class="fas fa-graduation-cap mr-1"></i>
+                Selamat belajar!
+            </span>
+
+            <button
+                type="button"
+                onclick="closePanduanBelajar()"
+                class="w-full sm:w-auto px-6 py-3 rounded-xl
+                       bg-purple-600 hover:bg-purple-700
+                       text-white text-sm font-bold
+                       shadow-lg shadow-purple-600/20
+                       transition-all duration-200"
+            >
+                Mengerti, Mulai Belajar
+                <i class="fas fa-arrow-right ml-2"></i>
+            </button>
+
+        </div>
+
+    </div>
+</div>
 @endsection
+<style>
+    @keyframes modalShow {
+        from {
+            opacity: 0;
+            transform: translateY(20px) scale(.97);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
 
+    .animate-modal {
+        animation: modalShow .25s ease-out;
+    }
+</style>
+
+<script>
+    function openPanduanBelajar() {
+        const modal = document.getElementById('modalPanduanBelajar');
+
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closePanduanBelajar() {
+        const modal = document.getElementById('modalPanduanBelajar');
+
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+
+        document.body.style.overflow = '';
+    }
+
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            closePanduanBelajar();
+        }
+    });
+</script>
 @push('scripts')
 <script>
     function toggleTahapan(id) {

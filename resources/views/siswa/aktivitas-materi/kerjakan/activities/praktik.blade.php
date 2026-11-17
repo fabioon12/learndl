@@ -35,6 +35,9 @@
 
     $instruction = (string) ($config['instruction'] ?? '');
 
+    // Hilangkan TAB dan spasi di awal setiap baris
+    $instruction = preg_replace('/^[\t ]+/m', '', $instruction);
+
     /*
      * Solusi guru tidak dikirim ke halaman siswa.
      * Jangan memasukkan config['solution'] ke HTML/JS.
@@ -84,9 +87,8 @@
         @if(trim($instruction) !== '')
             <div class="rounded-xl border border-white/10
                         bg-[#262626] p-4 text-sm
-                        leading-7 text-gray-200">
-                {{ $instruction }}
-            </div>
+                        leading-7 text-gray-200
+                        whitespace-pre-wrap break-words">{{ $instruction }}</div>
         @endif
 
         @if($mode === 'debugging')

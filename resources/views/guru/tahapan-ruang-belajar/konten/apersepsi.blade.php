@@ -51,8 +51,11 @@
         ]);
 @endphp
 
-{{-- TRIX EDITOR --}}
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/trix@2.1.15/dist/trix.css">
+{{-- Trix --}}
+<link rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/trix@2.1.15/dist/trix.css">
+
+<script src="https://cdn.jsdelivr.net/npm/trix@2.1.15/dist/trix.umd.min.js"></script>
 
 <style>
     trix-toolbar {
@@ -113,30 +116,9 @@
         line-height: 1.8;
     }
 
-    trix-editor ul ul {
-        list-style-type: circle;
-        margin-top: 6px;
-    }
-
-    trix-editor ul ul ul {
-        list-style-type: square;
-    }
-
-    trix-editor ol ol {
-        list-style-type: lower-alpha;
-        margin-top: 6px;
-    }
-
-    trix-editor ol ol ol {
-        list-style-type: lower-roman;
-    }
-
-    trix-editor li p {
-        margin: 0;
-    }
-
     trix-editor img {
         max-width: 100%;
+        height: auto;
         border-radius: 12px;
     }
 
@@ -172,12 +154,45 @@
         background: #6d28d9;
     }
 
-    .choice-preview {
-        transition: all .2s ease;
+    /* Preview mendukung gambar yang disisipkan melalui Trix. */
+    #previewPertanyaan {
+        overflow-wrap: anywhere;
+    }
+
+    #previewPertanyaan img {
+        display: block;
+        max-width: 100%;
+        width: auto;
+        height: auto;
+        max-height: 420px;
+        object-fit: contain;
+        margin: 12px 0;
+        border-radius: 12px;
+    }
+
+    #previewPertanyaan figure {
+        margin: 12px 0;
+    }
+
+    #previewPertanyaan p {
+        margin: 0 0 10px;
+    }
+
+    #previewPertanyaan ul {
+        list-style: disc;
+        padding-left: 22px;
+    }
+
+    #previewPertanyaan ol {
+        list-style: decimal;
+        padding-left: 22px;
+    }
+
+    #previewPertanyaan a {
+        color: #7c3aed;
+        text-decoration: underline;
     }
 </style>
-
-<script src="https://cdn.jsdelivr.net/npm/trix@2.1.15/dist/trix.umd.min.js"></script>
 
 <div class="max-w-6xl mx-auto space-y-6 pb-10">
 
@@ -228,7 +243,6 @@
 
             <div>
                 <p class="text-xs text-gray-400 mb-1">Ruang Belajar</p>
-
                 <p class="text-sm font-semibold text-gray-700 dark:text-gray-200">
                     {{ $ruangBelajar->judul }}
                 </p>
@@ -236,7 +250,6 @@
 
             <div>
                 <p class="text-xs text-gray-400 mb-1">Nama Tahapan</p>
-
                 <p class="text-sm font-semibold text-gray-700 dark:text-gray-200">
                     {{ $tahapan->judul_tahapan }}
                 </p>
@@ -277,6 +290,7 @@
     @endif
 
 
+    {{-- FORM --}}
     <form
         action="{{ $formAction }}"
         method="POST"
@@ -292,7 +306,7 @@
 
 
         {{-- ========================================= --}}
-        {{-- BAGIAN 1: MATERI APERSEPSI --}}
+        {{-- MATERI APERSEPSI --}}
         {{-- ========================================= --}}
 
         <div class="bg-white dark:bg-cyberdark-800 border border-gray-200 dark:border-gray-700 rounded-2xl overflow-hidden mb-6">
@@ -326,7 +340,7 @@
                     <i class="fa-solid fa-circle-info text-blue-500 mt-0.5"></i>
 
                     <p class="text-xs text-blue-700 dark:text-blue-300 leading-relaxed">
-                        Gunakan editor di bawah ini untuk membuat materi apersepsi. Guru dapat menyusun teks, memberikan penekanan informasi, menambahkan daftar, tautan, gambar, dan konten pendukung lainnya.
+                        Gunakan editor untuk menyusun teks, memberikan penekanan informasi, menambahkan daftar, tautan, gambar, dan konten pendukung lainnya.
                     </p>
 
                 </div>
@@ -338,7 +352,6 @@
                         <span class="text-red-500">*</span>
                     </label>
 
-                    {{-- Hidden input materi --}}
                     <input
                         id="materiEditor"
                         type="hidden"
@@ -346,7 +359,6 @@
                         value="{{ $materiIsi }}"
                     >
 
-                    {{-- Trix materi --}}
                     <trix-editor
                         id="apersepsiTrix"
                         input="materiEditor"
@@ -357,25 +369,17 @@
                     <div id="materiUploadStatus"
                          role="status"
                          aria-live="polite"
-                         class="hidden mt-3 text-xs font-medium text-purple-600 dark:text-purple-300">
+                         class="hidden mt-3 text-xs font-medium">
 
                         <i class="fa-solid fa-cloud-arrow-up mr-1"></i>
-                        <span class="upload-status-text">Mengunggah gambar...</span>
+                        <span class="upload-status-text"></span>
 
                     </div>
 
-                    <div class="flex items-center justify-between gap-2 mt-3">
-
-                        <p class="text-xs text-gray-400">
-                            <i class="fa-solid fa-pen-to-square mr-1"></i>
-                            Gunakan toolbar atau tarik gambar ke editor (JPG, PNG, GIF, WebP; maks. 5 MB).
-                        </p>
-
-                        <span class="text-xs text-gray-400">
-                            Editor Trix
-                        </span>
-
-                    </div>
+                    <p class="text-xs text-gray-400 mt-3">
+                        <i class="fa-solid fa-pen-to-square mr-1"></i>
+                        Gunakan toolbar atau tarik gambar ke editor. Format JPG, PNG, GIF, WebP; maksimal 5 MB.
+                    </p>
 
                 </div>
 
@@ -385,12 +389,11 @@
 
 
         {{-- ========================================= --}}
-        {{-- BAGIAN 2: FORUM DISKUSI --}}
+        {{-- FORUM DISKUSI --}}
         {{-- ========================================= --}}
 
         <div class="bg-white dark:bg-cyberdark-800 border border-gray-200 dark:border-gray-700 rounded-2xl overflow-hidden mb-6">
 
-            {{-- HEADER FORUM --}}
             <div class="p-5 border-b border-gray-100 dark:border-gray-700">
 
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -413,8 +416,6 @@
 
                     </div>
 
-
-                    {{-- TOGGLE FORUM --}}
                     <label class="relative inline-flex items-center cursor-pointer">
 
                         <input
@@ -448,7 +449,6 @@
             {{-- KONTEN FORUM --}}
             <div id="forumContent" class="p-5 space-y-5">
 
-                {{-- JUDUL FORUM --}}
                 <div>
 
                     <label class="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">
@@ -466,7 +466,7 @@
                 </div>
 
 
-                {{-- PERTANYAAN PEMANTIK --}}
+                {{-- PERTANYAAN --}}
                 <div>
 
                     <label class="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">
@@ -474,7 +474,6 @@
                         <span class="text-red-500">*</span>
                     </label>
 
-                    {{-- Hidden input pertanyaan forum --}}
                     <input
                         id="forumPertanyaanInput"
                         type="hidden"
@@ -482,7 +481,6 @@
                         value="{{ $forumPertanyaan }}"
                     >
 
-                    {{-- Trix pertanyaan forum --}}
                     <trix-editor
                         id="forumPertanyaanTrix"
                         input="forumPertanyaanInput"
@@ -493,15 +491,15 @@
                     <div id="forumUploadStatus"
                          role="status"
                          aria-live="polite"
-                         class="hidden mt-3 text-xs font-medium text-purple-600 dark:text-purple-300">
+                         class="hidden mt-3 text-xs font-medium">
 
                         <i class="fa-solid fa-cloud-arrow-up mr-1"></i>
-                        <span class="upload-status-text">Mengunggah gambar...</span>
+                        <span class="upload-status-text"></span>
 
                     </div>
 
                     <p class="text-xs text-gray-400 mt-3">
-                        Buat pertanyaan terbuka yang mendorong siswa menganalisis, memberikan alasan, dan menyampaikan pendapat. Anda juga dapat menambahkan gambar sebagai pendukung pertanyaan.
+                        Buat pertanyaan terbuka yang mendorong siswa menganalisis, memberikan alasan, dan menyampaikan pendapat.
                     </p>
 
                 </div>
@@ -530,7 +528,7 @@
                 </div>
 
 
-                {{-- PREVIEW PERTANYAAN --}}
+                {{-- PREVIEW --}}
                 <div class="p-4 bg-purple-50 dark:bg-purple-950/20 border border-purple-100 dark:border-purple-900/40 rounded-xl">
 
                     <div class="flex items-center gap-2 mb-3">
@@ -549,13 +547,10 @@
                             {{ $forumJudul }}
                         </p>
 
-                        {{-- Preview menggunakan teks biasa untuk menghindari HTML tidak tepercaya --}}
-                        <p id="previewPertanyaan"
-                           class="text-sm text-gray-600 dark:text-gray-300 mt-2 leading-relaxed whitespace-pre-line">
-
-                            {{ trim(strip_tags($forumPertanyaan)) ?: 'Pertanyaan pemantik akan ditampilkan di sini.' }}
-
-                        </p>
+                        <div id="previewPertanyaan"
+                             class="text-sm text-gray-600 dark:text-gray-300 mt-2 leading-relaxed">
+                            <span>{{ trim(strip_tags($forumPertanyaan)) ?: 'Pertanyaan pemantik akan ditampilkan di sini.' }}</span>
+                        </div>
 
                         <div class="mt-4">
 
@@ -619,7 +614,6 @@
                 </div>
 
                 <div>
-
                     <h4 class="font-bold text-indigo-800 dark:text-indigo-300 text-sm">
                         Pemantauan Aktivitas oleh Guru
                     </h4>
@@ -627,7 +621,6 @@
                     <p class="text-xs text-indigo-700 dark:text-indigo-400 mt-1 leading-relaxed">
                         Setelah apersepsi diberikan kepada siswa, guru dapat memantau jumlah siswa yang telah mengirimkan jawaban, melihat identitas siswa, membaca isi jawaban, dan memantau waktu pengiriman melalui halaman pemantauan diskusi.
                     </p>
-
                 </div>
 
             </div>
@@ -635,14 +628,12 @@
         </div>
 
 
-        {{-- ACTION BUTTON --}}
+        {{-- BUTTON --}}
         <div class="flex flex-col-reverse sm:flex-row items-center justify-between gap-3">
 
             <a href="{{ url()->previous() }}"
                class="w-full sm:w-auto px-5 py-3 rounded-xl text-sm font-semibold text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition text-center">
-
                 Batal
-
             </a>
 
             <button
@@ -665,555 +656,747 @@
 </div>
 
 
-{{-- ========================================= --}}
-{{-- JAVASCRIPT: FORM DAN PREVIEW --}}
-{{-- ========================================= --}}
+{{-- ============================================== --}}
+{{-- JAVASCRIPT APERSEPSI DAN TRIX --}}
+{{-- ============================================== --}}
 
 <script>
-document.addEventListener('DOMContentLoaded', function () {
+(function () {
 
-    const form = document.getElementById('apersepsiForm');
+    'use strict';
 
-    const forumToggle = document.getElementById('forumToggle');
-    const forumContent = document.getElementById('forumContent');
-    const forumDisabled = document.getElementById('forumDisabled');
+    // Mencegah inisialisasi berulang.
+    if (window.apersepsiPageInitialized) {
+        return;
+    }
 
-    const materiEditor = document.getElementById('apersepsiTrix');
-    const materiInput = document.getElementById('materiEditor');
-
-    const forumEditor = document.getElementById('forumPertanyaanTrix');
-    const forumInput = document.getElementById('forumPertanyaanInput');
-
-    const judulInput = document.querySelector('[name="forum[judul]"]');
-
-    const previewJudul = document.getElementById('previewJudul');
-    const previewPertanyaan = document.getElementById('previewPertanyaan');
-
-    const submitButton = document.getElementById('submitApersepsi');
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | 1. STATUS UPLOAD
-    |--------------------------------------------------------------------------
-    */
+    window.apersepsiPageInitialized = true;
 
     window.apersepsiUploadsPending = 0;
 
+    document.addEventListener('DOMContentLoaded', function () {
 
-    /*
-    |--------------------------------------------------------------------------
-    | 2. TOGGLE FORUM
-    |--------------------------------------------------------------------------
-    */
+        const form = document.getElementById('apersepsiForm');
 
-    function toggleForum() {
+        if (!form) return;
 
-        const aktif = forumToggle.checked;
+        const materiEditor = document.getElementById('apersepsiTrix');
+        const materiInput = document.getElementById('materiEditor');
 
-        forumContent.classList.toggle('hidden', !aktif);
-        forumDisabled.classList.toggle('hidden', aktif);
+        const forumEditor = document.getElementById('forumPertanyaanTrix');
+        const forumInput = document.getElementById('forumPertanyaanInput');
 
-        // Hanya menonaktifkan input milik form forum.
-        // Jangan menonaktifkan input internal toolbar Trix seperti name="href".
-        forumContent.querySelectorAll(
-            'input[name^="forum["], textarea[name^="forum["], select[name^="forum["]'
-        ).forEach(element => {
-            element.disabled = !aktif;
+        const forumToggle = document.getElementById('forumToggle');
+        const forumContent = document.getElementById('forumContent');
+        const forumDisabled = document.getElementById('forumDisabled');
+
+        const judulInput = form.querySelector('[name="forum[judul]"]');
+
+        const previewJudul = document.getElementById('previewJudul');
+        const previewPertanyaan = document.getElementById('previewPertanyaan');
+
+        const submitButton = document.getElementById('submitApersepsi');
+
+        const editorDiizinkan = [
+            'apersepsiTrix',
+            'forumPertanyaanTrix'
+        ];
+
+        // --------------------------------------------------
+        // STATUS UPLOAD
+        // --------------------------------------------------
+
+        function setStatus(editor, message, visible, type = 'info') {
+
+            const statusId = editor.id === 'apersepsiTrix'
+                ? 'materiUploadStatus'
+                : 'forumUploadStatus';
+
+            const statusElement = document.getElementById(statusId);
+
+            if (!statusElement) return;
+
+            const textElement = statusElement.querySelector(
+                '.upload-status-text'
+            );
+
+            if (textElement) {
+                textElement.textContent = message;
+            }
+
+            statusElement.classList.toggle('hidden', !visible);
+
+            statusElement.classList.remove(
+                'text-red-500',
+                'text-green-600',
+                'text-purple-600',
+                'text-blue-600'
+            );
+
+            if (type === 'success') {
+                statusElement.classList.add('text-green-600');
+            } else if (type === 'error') {
+                statusElement.classList.add('text-red-500');
+            } else {
+                statusElement.classList.add('text-purple-600');
+            }
+        }
+
+
+        // --------------------------------------------------
+        // TOGGLE FORUM
+        // --------------------------------------------------
+
+        function toggleForum() {
+
+            const aktif = forumToggle.checked;
+
+            forumContent.classList.toggle('hidden', !aktif);
+            forumDisabled.classList.toggle('hidden', aktif);
+
+            // Nonaktifkan input forum ketika forum dimatikan.
+            forumContent.querySelectorAll(
+                'input[name^="forum["], textarea[name^="forum["], select[name^="forum["]'
+            ).forEach(function (element) {
+
+                element.disabled = !aktif;
+
+            });
+
+            // Gunakan API editor Trix jika sudah tersedia.
+            if (forumEditor.editor &&
+                typeof forumEditor.editor.setReadOnly === 'function') {
+
+                forumEditor.editor.setReadOnly(!aktif);
+
+            } else {
+
+                forumEditor.setAttribute(
+                    'contenteditable',
+                    aktif ? 'true' : 'false'
+                );
+
+            }
+        }
+
+        forumToggle.addEventListener('change', toggleForum);
+
+        forumEditor.addEventListener('trix-initialize', toggleForum);
+
+
+        // --------------------------------------------------
+        // PREVIEW JUDUL
+        // --------------------------------------------------
+
+        judulInput.addEventListener('input', function () {
+
+            previewJudul.textContent =
+                this.value.trim() || 'Judul Diskusi';
+
         });
 
-        // Editor Trix harus dikunci secara terpisah.
-        forumEditor.setAttribute(
-            'contenteditable',
-            aktif ? 'true' : 'false'
+
+        // --------------------------------------------------
+        // PREVIEW PERTANYAAN
+        // --------------------------------------------------
+
+        function updatePreviewPertanyaan() {
+
+            // Pastikan nilai hidden input mengikuti konten terbaru dari Trix.
+            if (forumEditor.editor) {
+                forumInput.value = forumEditor.value;
+            }
+
+            const html = (forumInput.value || '').trim();
+
+            if (!html) {
+                previewPertanyaan.innerHTML =
+                    '<span class="text-gray-400">Pertanyaan pemantik akan ditampilkan di sini.</span>';
+                return;
+            }
+
+            // Render hanya elemen yang dibutuhkan. Elemen/script berbahaya
+            // dan atribut event seperti onclick tidak akan disalin ke preview.
+            const parser = new DOMParser();
+            const parsed = parser.parseFromString(html, 'text/html');
+            const allowedTags = new Set([
+                'P', 'BR', 'STRONG', 'B', 'EM', 'I', 'U',
+                'UL', 'OL', 'LI', 'H1', 'H2', 'H3',
+                'BLOCKQUOTE', 'DIV', 'SPAN', 'FIGURE', 'A', 'IMG'
+            ]);
+
+            function copySafeNode(node) {
+                if (node.nodeType === Node.TEXT_NODE) {
+                    return document.createTextNode(node.textContent || '');
+                }
+
+                if (node.nodeType !== Node.ELEMENT_NODE) {
+                    return document.createDocumentFragment();
+                }
+
+                const tag = node.tagName;
+
+                // Abaikan script, style, iframe, dan elemen yang tidak diizinkan.
+                if (!allowedTags.has(tag)) {
+                    const fragment = document.createDocumentFragment();
+                    node.childNodes.forEach(child => {
+                        fragment.appendChild(copySafeNode(child));
+                    });
+                    return fragment;
+                }
+
+                const safeElement = document.createElement(tag.toLowerCase());
+
+                if (tag === 'IMG') {
+                    const rawSrc = node.getAttribute('src') || '';
+                    try {
+                        const imageUrl = new URL(rawSrc, window.location.origin);
+                        if (!['http:', 'https:'].includes(imageUrl.protocol)) {
+                            return document.createDocumentFragment();
+                        }
+                        safeElement.src = imageUrl.href;
+                    } catch (error) {
+                        return document.createDocumentFragment();
+                    }
+
+                    safeElement.alt = node.getAttribute('alt') || 'Gambar materi';
+                    safeElement.loading = 'lazy';
+                    safeElement.referrerPolicy = 'no-referrer';
+                }
+
+                if (tag === 'A') {
+                    const rawHref = node.getAttribute('href') || '';
+                    try {
+                        const linkUrl = new URL(rawHref, window.location.origin);
+                        if (['http:', 'https:'].includes(linkUrl.protocol)) {
+                            safeElement.href = linkUrl.href;
+                            safeElement.target = '_blank';
+                            safeElement.rel = 'noopener noreferrer';
+                        }
+                    } catch (error) {
+                        // Tautan tidak valid ditampilkan sebagai teks biasa.
+                    }
+                }
+
+                node.childNodes.forEach(child => {
+                    safeElement.appendChild(copySafeNode(child));
+                });
+
+                return safeElement;
+            }
+
+            previewPertanyaan.innerHTML = '';
+            parsed.body.childNodes.forEach(node => {
+                previewPertanyaan.appendChild(copySafeNode(node));
+            });
+        }
+
+        forumEditor.addEventListener(
+            'trix-change',
+            updatePreviewPertanyaan
         );
 
-        forumEditor.style.pointerEvents = aktif ? '' : 'none';
-    }
-
-    forumToggle.addEventListener('change', toggleForum);
-
-    toggleForum();
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | 3. PREVIEW JUDUL
-    |--------------------------------------------------------------------------
-    */
-
-    judulInput.addEventListener('input', function () {
-
-        previewJudul.textContent =
-            this.value.trim() || 'Judul Diskusi';
-
-    });
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | 4. PREVIEW PERTANYAAN TRIX
-    |--------------------------------------------------------------------------
-    */
-
-    function updatePreviewPertanyaan() {
-
-        if (!forumEditor.editor) {
-            return;
-        }
-
-        const teks = forumEditor.editor
-            .getDocument()
-            .toString()
-            .trim();
-
-        const memilikiGambar = /<img\b/i.test(forumInput.value);
-
-        if (teks) {
-
-            previewPertanyaan.textContent = teks;
-
-        } else if (memilikiGambar) {
-
-            previewPertanyaan.textContent = 'Gambar pertanyaan terlampir.';
-
-        } else {
-
-            previewPertanyaan.textContent =
-                'Pertanyaan pemantik akan ditampilkan di sini.';
-
-        }
-    }
-
-    forumEditor.addEventListener('trix-change', updatePreviewPertanyaan);
-
-    forumEditor.addEventListener('trix-initialize', updatePreviewPertanyaan);
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | 5. CEK KONTEN TRIX
-    |--------------------------------------------------------------------------
-    */
-
-    function hasTrixContent(editor, hiddenInput) {
-
-        const teks = editor.editor
-            ? editor.editor.getDocument().toString().trim()
-            : '';
-
-        const memilikiGambar = /<img\b/i.test(hiddenInput.value);
-
-        return teks.length > 0 || memilikiGambar;
-    }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | 6. SUBMIT FORM
-    |--------------------------------------------------------------------------
-    */
-
-    form.addEventListener('submit', function (e) {
-
-        // Cegah submit ketika gambar masih diunggah.
-        if (window.apersepsiUploadsPending > 0) {
-
-            e.preventDefault();
-
-            alert('Tunggu sampai semua gambar selesai diunggah.');
-
-            return;
-        }
-
-
-        // Validasi materi apersepsi.
-        if (!hasTrixContent(materiEditor, materiInput)) {
-
-            e.preventDefault();
-
-            alert('Silakan isi materi apersepsi terlebih dahulu.');
-
-            materiEditor.focus();
-
-            return;
-        }
-
-
-        // Validasi pertanyaan jika forum aktif.
-        if (
-            forumToggle.checked &&
-            !hasTrixContent(forumEditor, forumInput)
-        ) {
-
-            e.preventDefault();
-
-            alert('Silakan isi pertanyaan pemantik forum diskusi.');
-
-            forumEditor.focus();
-
-            return;
-        }
-
-
-        // Cegah klik submit berulang.
-        submitButton.disabled = true;
-
-        submitButton.classList.add('opacity-70', 'cursor-not-allowed');
-
-        submitButton.innerHTML = `
-            <i class="fa-solid fa-spinner fa-spin"></i>
-            Menyimpan...
-        `;
-
-    });
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | 7. STATUS UPLOAD UNTUK MASING-MASING EDITOR
-    |--------------------------------------------------------------------------
-    */
-
-    function updateUploadStatus(editor, message, visible) {
-
-        const statusId = editor.id === 'apersepsiTrix'
-            ? 'materiUploadStatus'
-            : 'forumUploadStatus';
-
-        const status = document.getElementById(statusId);
-
-        if (!status) {
-            return;
-        }
-
-        const text = status.querySelector('.upload-status-text');
-
-        if (text) {
-            text.textContent = message;
-        }
-
-        status.classList.toggle('hidden', !visible);
-    }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | 8. INISIALISASI EDITOR FORUM
-    |--------------------------------------------------------------------------
-    */
-
-    forumEditor.addEventListener('trix-initialize', function () {
-
-        forumEditor.setAttribute(
-            'contenteditable',
-            forumToggle.checked ? 'true' : 'false'
+        forumEditor.addEventListener(
+            'trix-initialize',
+            updatePreviewPertanyaan
         );
+
+
+        // --------------------------------------------------
+        // VALIDASI KONTEN TRIX
+        // --------------------------------------------------
+
+        function hasTrixContent(editor, hiddenInput) {
+
+            const teks = editor.editor
+                ? editor.editor.getDocument().toString().trim()
+                : '';
+
+            const memilikiGambar = /<img\b/i.test(hiddenInput.value);
+
+            return teks.length > 0 || memilikiGambar;
+        }
+
+
+        // --------------------------------------------------
+        // UPLOAD GAMBAR TRIX
+        // --------------------------------------------------
+
+        document.addEventListener(
+            'trix-attachment-add',
+            function (event) {
+
+                const editor = event.target;
+                const attachment = event.attachment;
+
+                // Pastikan hanya dua editor ini yang diproses.
+                if (
+                    !editor ||
+                    !editorDiizinkan.includes(editor.id) ||
+                    !attachment ||
+                    !attachment.file
+                ) {
+                    return;
+                }
+
+                const file = attachment.file;
+
+                // Cegah proses upload ganda.
+                if (attachment.__apersepsiUploading) {
+                    return;
+                }
+
+                attachment.__apersepsiUploading = true;
+
+                let uploadSelesai = false;
+
+                const selesaiUpload = function () {
+
+                    if (uploadSelesai) return;
+
+                    uploadSelesai = true;
+
+                    window.apersepsiUploadsPending = Math.max(
+                        0,
+                        window.apersepsiUploadsPending - 1
+                    );
+                };
+
+
+                const gagalUpload = function (pesan) {
+
+                    attachment.remove();
+
+                    setStatus(
+                        editor,
+                        pesan,
+                        true,
+                        'error'
+                    );
+
+                    selesaiUpload();
+
+                    attachment.__apersepsiUploading = false;
+                };
+
+
+                // ------------------------------------------
+                // VALIDASI FORMAT
+                // ------------------------------------------
+
+                const formatDiizinkan = [
+                    'image/jpeg',
+                    'image/png',
+                    'image/gif',
+                    'image/webp'
+                ];
+
+                if (!formatDiizinkan.includes(file.type)) {
+
+                    alert(
+                        'Format gambar harus JPG, JPEG, PNG, GIF, atau WebP.'
+                    );
+
+                    gagalUpload('Format gambar tidak didukung.');
+
+                    return;
+                }
+
+
+                // ------------------------------------------
+                // VALIDASI UKURAN
+                // ------------------------------------------
+
+                const maksimalUkuran = 5 * 1024 * 1024;
+
+                if (file.size > maksimalUkuran) {
+
+                    alert('Ukuran gambar maksimal 5 MB.');
+
+                    gagalUpload('Ukuran gambar melebihi 5 MB.');
+
+                    return;
+                }
+
+
+                // ------------------------------------------
+                // URL UPLOAD
+                // ------------------------------------------
+
+                const uploadUrl = editor.dataset.uploadUrl;
+
+                if (!uploadUrl) {
+
+                    alert('URL upload gambar tidak ditemukan.');
+
+                    gagalUpload('URL upload tidak ditemukan.');
+
+                    return;
+                }
+
+
+                // ------------------------------------------
+                // CSRF TOKEN
+                // ------------------------------------------
+
+                const csrfToken =
+                    document.querySelector('meta[name="csrf-token"]')?.content ||
+                    document.querySelector('input[name="_token"]')?.value;
+
+                if (!csrfToken) {
+
+                    alert('Token CSRF tidak ditemukan.');
+
+                    gagalUpload('Token keamanan tidak ditemukan.');
+
+                    return;
+                }
+
+
+                // ------------------------------------------
+                // PERSIAPAN REQUEST
+                // ------------------------------------------
+
+                const formData = new FormData();
+
+                formData.append('gambar', file);
+
+                window.apersepsiUploadsPending++;
+
+                setStatus(
+                    editor,
+                    'Menyiapkan upload gambar...',
+                    true
+                );
+
+                const xhr = new XMLHttpRequest();
+
+                xhr.open('POST', uploadUrl, true);
+
+                xhr.responseType = 'text';
+
+                xhr.timeout = 60000;
+
+                xhr.setRequestHeader(
+                    'X-CSRF-TOKEN',
+                    csrfToken
+                );
+
+                xhr.setRequestHeader(
+                    'Accept',
+                    'application/json'
+                );
+
+
+                // ------------------------------------------
+                // PROGRESS
+                // ------------------------------------------
+
+                xhr.upload.onprogress = function (progressEvent) {
+
+                    if (!progressEvent.lengthComputable) return;
+
+                    const progress = Math.round(
+                        (progressEvent.loaded / progressEvent.total) * 100
+                    );
+
+                    attachment.setUploadProgress(progress);
+
+                    setStatus(
+                        editor,
+                        'Mengunggah gambar... ' + progress + '%',
+                        true
+                    );
+                };
+
+
+                // ------------------------------------------
+                // RESPONSE SERVER
+                // ------------------------------------------
+
+                xhr.onload = function () {
+
+                    let response = null;
+
+                    try {
+
+                        response = JSON.parse(xhr.responseText);
+
+                    } catch (error) {
+
+                        console.error(
+                            'Respons server bukan JSON:',
+                            xhr.responseText
+                        );
+
+                    }
+
+                    console.log('Trix editor:', editor.id);
+                    console.log('HTTP status:', xhr.status);
+                    console.log('Respons upload:', response);
+
+
+                    // Upload berhasil.
+                    const returnedImageUrl = response?.url || response?.path || null;
+                    let accessibleImageUrl = null;
+
+                    if (returnedImageUrl) {
+                        try {
+                            const parsedImageUrl = new URL(
+                                returnedImageUrl,
+                                window.location.origin
+                            );
+
+                            if (['http:', 'https:'].includes(parsedImageUrl.protocol)) {
+                                accessibleImageUrl = parsedImageUrl.href;
+                            }
+                        } catch (error) {
+                            accessibleImageUrl = null;
+                        }
+                    }
+
+                    if (
+                        xhr.status >= 200 &&
+                        xhr.status < 300 &&
+                        response &&
+                        response.success === true &&
+                        accessibleImageUrl
+                    ) {
+
+                        attachment.setAttributes({
+                            url: accessibleImageUrl,
+                            href: accessibleImageUrl
+                        });
+
+                        attachment.setUploadProgress(100);
+
+                        setStatus(
+                            editor,
+                            'Gambar berhasil diunggah.',
+                            true,
+                            'success'
+                        );
+
+                        selesaiUpload();
+
+                        attachment.__apersepsiUploading = false;
+
+                        setTimeout(function () {
+
+                            setStatus(editor, '', false);
+
+                        }, 2500);
+
+                        return;
+                    }
+
+
+                    // --------------------------------------
+                    // PESAN ERROR
+                    // --------------------------------------
+
+                    let pesan = response?.message ||
+                        'Upload gambar gagal.';
+
+                    if (xhr.status === 401 || xhr.status === 403) {
+
+                        pesan = 'Anda tidak memiliki izin mengunggah gambar.';
+
+                    } else if (xhr.status === 404) {
+
+                        pesan = 'Route upload gambar tidak ditemukan.';
+
+                    } else if (xhr.status === 419) {
+
+                        pesan = 'Sesi telah berakhir. Muat ulang halaman.';
+
+                    } else if (xhr.status === 422) {
+
+                        pesan = response?.message ||
+                            'File gambar tidak memenuhi validasi.';
+
+                    } else if (xhr.status >= 500) {
+
+                        pesan = 'Terjadi kesalahan server. Periksa Laravel log.';
+
+                    }
+
+                    alert(pesan);
+
+                    gagalUpload(pesan);
+                };
+
+
+                // ------------------------------------------
+                // ERROR KONEKSI
+                // ------------------------------------------
+
+                xhr.onerror = function () {
+
+                    alert(
+                        'Gagal menghubungi server saat mengunggah gambar.'
+                    );
+
+                    gagalUpload('Koneksi ke server gagal.');
+                };
+
+
+                // ------------------------------------------
+                // TIMEOUT
+                // ------------------------------------------
+
+                xhr.ontimeout = function () {
+
+                    alert(
+                        'Upload gambar terlalu lama. Silakan coba kembali.'
+                    );
+
+                    gagalUpload('Upload gambar melewati batas waktu.');
+                };
+
+
+                // ------------------------------------------
+                // REQUEST DIBATALKAN
+                // ------------------------------------------
+
+                xhr.onabort = function () {
+
+                    gagalUpload('Upload gambar dibatalkan.');
+                };
+
+
+                // ------------------------------------------
+                // KIRIM REQUEST
+                // ------------------------------------------
+
+                try {
+
+                    xhr.send(formData);
+
+                } catch (error) {
+
+                    console.error('Kesalahan mengirim upload:', error);
+
+                    gagalUpload('Gagal mengirim gambar ke server.');
+                }
+
+            }
+        );
+
+
+        // --------------------------------------------------
+        // SUBMIT FORM
+        // --------------------------------------------------
+
+        form.addEventListener('submit', function (event) {
+
+            // Cegah submit ketika upload belum selesai.
+            if (window.apersepsiUploadsPending > 0) {
+
+                event.preventDefault();
+
+                alert(
+                    'Tunggu sampai semua gambar selesai diunggah.'
+                );
+
+                return;
+            }
+
+
+            // Sinkronkan nilai hidden input dari editor.
+            // Trix biasanya melakukan sinkronisasi otomatis,
+            // tetapi ini memastikan nilainya sudah diperbarui.
+            materiInput.value = materiEditor.value;
+
+            forumInput.value = forumEditor.value;
+
+
+            // Validasi materi.
+            if (!hasTrixContent(materiEditor, materiInput)) {
+
+                event.preventDefault();
+
+                alert('Silakan isi materi apersepsi terlebih dahulu.');
+
+                materiEditor.focus();
+
+                return;
+            }
+
+
+            // Validasi pertanyaan ketika forum aktif.
+            if (
+                forumToggle.checked &&
+                !hasTrixContent(forumEditor, forumInput)
+            ) {
+
+                event.preventDefault();
+
+                alert(
+                    'Silakan isi pertanyaan pemantik forum diskusi.'
+                );
+
+                forumEditor.focus();
+
+                return;
+            }
+
+
+            // Validasi jumlah jawaban.
+            if (forumToggle.checked) {
+
+                const batasInput = form.querySelector(
+                    '[name="forum[batas_jawaban]"]'
+                );
+
+                const batas = Number(batasInput.value);
+
+                if (
+                    !Number.isInteger(batas) ||
+                    batas < 1 ||
+                    batas > 10
+                ) {
+
+                    event.preventDefault();
+
+                    alert(
+                        'Jumlah jawaban maksimal harus antara 1 sampai 10.'
+                    );
+
+                    batasInput.focus();
+
+                    return;
+                }
+            }
+
+
+            // Cegah submit berulang.
+            submitButton.disabled = true;
+
+            submitButton.classList.add(
+                'opacity-70',
+                'cursor-not-allowed'
+            );
+
+            submitButton.innerHTML = `
+                <i class="fa-solid fa-spinner fa-spin"></i>
+                Menyimpan...
+            `;
+
+        });
+
+
+        // --------------------------------------------------
+        // INISIALISASI AWAL
+        // --------------------------------------------------
+
+        toggleForum();
 
         updatePreviewPertanyaan();
 
     });
 
-});
-</script>
-
-
-{{-- ========================================= --}}
-{{-- JAVASCRIPT: UPLOAD GAMBAR KEDUA TRIX --}}
-{{-- ========================================= --}}
-
-<script>
-document.addEventListener('trix-attachment-add', function (event) {
-
-    const editor = event.target;
-    const attachment = event.attachment;
-
-    /*
-    |--------------------------------------------------------------------------
-    | HANYA PROSES DUA EDITOR APERSEPSI
-    |--------------------------------------------------------------------------
-    */
-
-    const editorDiizinkan = [
-        'apersepsiTrix',
-        'forumPertanyaanTrix'
-    ];
-
-    if (!editorDiizinkan.includes(editor.id)) {
-        return;
-    }
-
-    if (!attachment.file) {
-        return;
-    }
-
-
-    const file = attachment.file;
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | VALIDASI FILE
-    |--------------------------------------------------------------------------
-    */
-
-    if (!file.type.startsWith('image/')) {
-
-        alert('Hanya file gambar yang diperbolehkan.');
-
-        attachment.remove();
-
-        return;
-    }
-
-
-    if (file.size > 5 * 1024 * 1024) {
-
-        alert('Ukuran gambar maksimal 5 MB.');
-
-        attachment.remove();
-
-        return;
-    }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | CEK URL UPLOAD
-    |--------------------------------------------------------------------------
-    */
-
-    const uploadUrl = editor.dataset.uploadUrl;
-
-    if (!uploadUrl) {
-
-        alert('URL upload gambar tidak ditemukan.');
-
-        attachment.remove();
-
-        return;
-    }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | CEK CSRF TOKEN
-    |--------------------------------------------------------------------------
-    */
-
-    const csrfToken = document.querySelector(
-        'meta[name="csrf-token"]'
-    )?.content || document.querySelector(
-        'input[name="_token"]'
-    )?.value;
-
-    if (!csrfToken) {
-
-        alert('Token CSRF tidak ditemukan.');
-
-        attachment.remove();
-
-        return;
-    }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | PERSIAPAN UPLOAD
-    |--------------------------------------------------------------------------
-    */
-
-    const formData = new FormData();
-
-    formData.append('gambar', file);
-
-    const xhr = new XMLHttpRequest();
-
-    let uploadSelesai = false;
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | COUNTER UPLOAD
-    |--------------------------------------------------------------------------
-    */
-
-    window.apersepsiUploadsPending =
-        (window.apersepsiUploadsPending || 0) + 1;
-
-
-    function selesaiUpload() {
-
-        if (uploadSelesai) {
-            return;
-        }
-
-        uploadSelesai = true;
-
-        window.apersepsiUploadsPending = Math.max(
-            0,
-            window.apersepsiUploadsPending - 1
-        );
-
-    }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | STATUS UPLOAD
-    |--------------------------------------------------------------------------
-    */
-
-    const statusId = editor.id === 'apersepsiTrix'
-        ? 'materiUploadStatus'
-        : 'forumUploadStatus';
-
-    const status = document.getElementById(statusId);
-
-    function setStatus(message, visible) {
-
-        if (!status) {
-            return;
-        }
-
-        const text = status.querySelector('.upload-status-text');
-
-        if (text) {
-            text.textContent = message;
-        }
-
-        status.classList.toggle('hidden', !visible);
-
-    }
-
-    setStatus('Mengunggah gambar...', true);
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | KIRIM REQUEST
-    |--------------------------------------------------------------------------
-    */
-
-    xhr.open('POST', uploadUrl, true);
-
-    xhr.responseType = 'json';
-
-    xhr.setRequestHeader('X-CSRF-TOKEN', csrfToken);
-
-    xhr.setRequestHeader('Accept', 'application/json');
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | PROGRESS UPLOAD
-    |--------------------------------------------------------------------------
-    */
-
-    xhr.upload.onprogress = function (event) {
-
-        if (event.lengthComputable) {
-
-            const progress = Math.round(
-                (event.loaded / event.total) * 100
-            );
-
-            attachment.setUploadProgress(progress);
-
-            setStatus(
-                'Mengunggah gambar... ' + progress + '%',
-                true
-            );
-
-        }
-
-    };
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | UPLOAD BERHASIL / GAGAL
-    |--------------------------------------------------------------------------
-    */
-
-    xhr.onload = function () {
-
-        const response = xhr.response;
-
-        console.log('Editor:', editor.id);
-        console.log('Status upload:', xhr.status);
-        console.log('Respons upload:', response);
-
-
-        if (
-            xhr.status >= 200 &&
-            xhr.status < 300 &&
-            response?.success &&
-            response?.url
-        ) {
-
-            attachment.setAttributes({
-                url: response.url,
-                href: response.url
-            });
-
-            attachment.setUploadProgress(100);
-
-            setStatus('Gambar berhasil diunggah.', true);
-
-            selesaiUpload();
-
-            // Sembunyikan status setelah beberapa saat.
-            setTimeout(function () {
-                setStatus('', false);
-            }, 2000);
-
-        } else {
-
-            alert(
-                response?.message ||
-                'Upload gambar gagal. HTTP ' + xhr.status
-            );
-
-            attachment.remove();
-
-            setStatus('Upload gambar gagal.', true);
-
-            selesaiUpload();
-
-        }
-
-    };
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | ERROR KONEKSI
-    |--------------------------------------------------------------------------
-    */
-
-    xhr.onerror = function () {
-
-        alert('Gagal menghubungi server saat mengunggah gambar.');
-
-        attachment.remove();
-
-        setStatus('Gagal mengunggah gambar.', true);
-
-        selesaiUpload();
-
-    };
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | REQUEST DIKIRIM
-    |--------------------------------------------------------------------------
-    */
-
-    xhr.send(formData);
-
-});
+})();
 </script>
 
 @endsection

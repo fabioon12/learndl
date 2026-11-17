@@ -74,7 +74,7 @@
 
         {{-- PERTANYAAN --}}
         <div class="text-base font-semibold leading-8 text-white">
-            {{ strip_tags($question) }}
+            {{ $question }}
         </div>
 
     </div>

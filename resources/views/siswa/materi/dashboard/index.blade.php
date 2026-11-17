@@ -236,7 +236,7 @@
                             </div>
 
                             {{-- Tombol --}}
-                            <a href="{{ route('siswa.ruang-materi.dashboard-belajar') }}"
+                            <a href="{{ route('siswa.ruang-materi.dashboard-belajar', ['materi' => $materi->id]) }}"
                                class="w-full inline-flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-extrabold text-xs shadow-md shadow-pink-500/20 transition-all active:scale-[0.98]">
                                 <i class="fa-solid fa-play text-[10px]"></i>
                                 Lanjutkan Belajar

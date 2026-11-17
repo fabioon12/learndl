@@ -10,6 +10,7 @@ use App\Models\RuangUjian;
 use App\Models\Materi;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class TahapanKontenController extends Controller
 {
@@ -246,66 +247,51 @@ class TahapanKontenController extends Controller
                 abort(422, 'Tipe aktivitas tidak dikenali.');
         }
     }
-    public function uploadGambar(
-        Request $request,
-        $ruang_belajar_id,
-        $tahapan_id
-    ) {
-        $request->validate([
-            'gambar' => [
-                'required',
-                'image',
-                'mimes:jpg,jpeg,png,gif,webp',
-                'max:5120',
-            ],
-        ]);
 
-        $ruangBelajar = RuangBelajar::query()
-            ->whereKey($ruang_belajar_id)
-            ->where(function ($query) {
-                $query->where('user_id', auth()->id())
-                    ->orWhere('guru_id', auth()->id());
-            })
-            ->firstOrFail();
 
-        Tahapan::query()
-            ->where('ruang_belajar_id', $ruangBelajar->id)
-            ->where('tipe', 'apersepsi')
-            ->findOrFail($tahapan_id);
 
-        try {
-            $file = $request->file('gambar');
+public function uploadGambar(Request $request, $ruang_belajar_id, $tahapan_id)
+{
+    $request->validate([
+        'gambar' => 'required|file|mimes:jpeg,png,jpg,webp,gif|max:10240',
+    ]);
 
-            $path = $file->store(
-                'apersepsi-images',
-                'public'
-            );
+    // Validasi kepemilikan ruang belajar
+    $ruangBelajar = RuangBelajar::where('id', $ruang_belajar_id)
+        ->where(function ($query) {
+            $query->where('user_id', auth()->id())
+                  ->orWhere('guru_id', auth()->id());
+        })
+        ->firstOrFail();
 
-            if (!$path) {
-                throw new \RuntimeException(
-                    'File gagal disimpan ke storage.'
-                );
-            }
+    // Validasi tahapan apersepsi
+    $tahapan = Tahapan::where('ruang_belajar_id', $ruangBelajar->id)
+        ->where('tipe', 'apersepsi')
+        ->where('id', $tahapan_id)
+        ->firstOrFail();
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Gambar berhasil diunggah.',
-                'url' => url(Storage::disk('public')->url($path)),
-            ]);
+    if ($request->hasFile('gambar')) {
 
-        } catch (Throwable $e) {
+        $path = $request->file('gambar')->store(
+            'apersepsi-images',
+            'public'
+        );
 
-            Log::error('Upload gambar apersepsi gagal', [
-                'user_id' => auth()->id(),
-                'ruang_belajar_id' => $ruang_belajar_id,
-                'tahapan_id' => $tahapan_id,
-                'error' => $e->getMessage(),
-            ]);
+        $url = asset('storage/' . $path);
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Gambar gagal diunggah. Periksa log Laravel.',
-            ], 500);
-        }
+        return response()->json([
+            'success' => true,
+            'url' => $url,
+            'path' => $path,
+        ], 200);
     }
+
+    return response()->json([
+        'success' => false,
+        'message' => 'File gambar tidak ditemukan dalam request.',
+    ], 400);
+}
+
+
+
 }

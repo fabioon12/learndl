@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Guru;
 
 use App\Http\Controllers\Controller;
 use App\Models\RuangUjian;
+use App\Models\HasilUjian;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
 
 class RuangUjianController extends Controller
 {
@@ -136,6 +138,7 @@ class RuangUjianController extends Controller
             ->with([
                 'soal',
                 'hasilUjian.siswa',
+                'hasilUjian.jawaban.soal',
             ])
             ->withCount('soal')
             ->withSum('soal', 'exp')
@@ -147,6 +150,151 @@ class RuangUjianController extends Controller
             'ruangUjian',
             'totalExp'
         ));
+    }
+
+    public function simpanPenilaian(Request $request, $ruangUjianId, $hasilUjianId)
+    {
+        $ruangUjian = RuangUjian::where('guru_id', Auth::id())
+            ->findOrFail($ruangUjianId);
+
+        $hasilUjian = HasilUjian::where('ruang_ujian_id', $ruangUjian->id)
+            ->where('status', 'selesai')
+            ->findOrFail($hasilUjianId);
+
+        $validated = $request->validate([
+            'nilai' => ['required', 'array'],
+            'nilai.*' => ['nullable', 'numeric', 'min:0'],
+
+            'catatan' => ['nullable', 'array'],
+            'catatan.*' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        try {
+            DB::transaction(function () use ($validated, $hasilUjian) {
+
+                $hasil = HasilUjian::whereKey($hasilUjian->id)
+                    ->lockForUpdate()
+                    ->firstOrFail();
+
+                $jawaban = $hasil->jawaban()
+                    ->with('soal')
+                    ->get()
+                    ->keyBy('id');
+
+                // Simpan nilai dan catatan guru.
+                foreach ($validated['nilai'] as $jawabanId => $nilai) {
+
+                    if ($nilai === null || $nilai === '') {
+                        continue;
+                    }
+
+                    $item = $jawaban->get($jawabanId);
+
+                    if (!$item || !$item->soal) {
+                        throw \Illuminate\Validation\ValidationException::withMessages([
+                            'nilai' => 'Jawaban siswa tidak ditemukan.',
+                        ]);
+                    }
+
+                    if ($item->soal->tipe !== 'esai') {
+                        throw \Illuminate\Validation\ValidationException::withMessages([
+                            'nilai' => 'Hanya jawaban esai yang dapat dinilai manual.',
+                        ]);
+                    }
+
+                    $skorMaksimal = (float) (
+                        $item->soal->skor_maksimal ?? 100
+                    );
+
+                    if ((float) $nilai > $skorMaksimal) {
+                        throw \Illuminate\Validation\ValidationException::withMessages([
+                            'nilai' => "Nilai soal nomor {$item->soal->urutan} maksimal {$skorMaksimal}.",
+                        ]);
+                    }
+
+                    $item->update([
+                        'skor_esai' => $nilai,
+                        'catatan_guru' => $validated['catatan'][$jawabanId] ?? null,
+                        'dinilai_pada' => now(),
+                    ]);
+                }
+
+                // Ambil ulang jawaban setelah penilaian disimpan.
+                $jawabanTerbaru = $hasil->jawaban()
+                    ->with('soal')
+                    ->get();
+
+                $jawabanEsai = $jawabanTerbaru->filter(function ($item) {
+                    return $item->soal?->tipe === 'esai';
+                });
+
+                $semuaEsaiDinilai = $jawabanEsai->every(function ($item) {
+                    return $item->skor_esai !== null;
+                });
+
+                // Nilai akhir hanya diperbarui jika seluruh esai telah dinilai.
+                if ($semuaEsaiDinilai) {
+
+                    $totalSkor = 0;
+                    $totalMaksimal = 0;
+
+                    foreach ($jawabanTerbaru as $item) {
+
+                        $soal = $item->soal;
+
+                        if (!$soal) {
+                            continue;
+                        }
+
+                        $skorMaksimal = (float) (
+                            $soal->skor_maksimal ?? 100
+                        );
+
+                        $totalMaksimal += $skorMaksimal;
+
+                        if ($soal->tipe === 'esai') {
+                            $totalSkor += (float) $item->skor_esai;
+                        } elseif ($item->benar) {
+                            $totalSkor += $skorMaksimal;
+                        }
+                    }
+
+                    $nilaiAkhir = $totalMaksimal > 0
+                        ? round(($totalSkor / $totalMaksimal) * 100, 2)
+                        : 0;
+
+                    $hasil->update([
+                        'nilai' => $nilaiAkhir,
+                    ]);
+
+                    $hasil->refresh();
+
+                    // Sinkronkan progres setelah semua esai selesai dinilai.
+                    if (method_exists($this, 'sinkronkanProgresTahapan')) {
+                        $this->sinkronkanProgresTahapan($hasil);
+                    }
+                }
+            });
+
+            return redirect()
+                ->route('guru.ruang-ujian.show', $ruangUjian->id)
+                ->with('success', 'Penilaian jawaban siswa berhasil disimpan.');
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            throw $e;
+
+        } catch (\Throwable $e) {
+            report($e);
+
+            return redirect()
+                ->route('guru.ruang-ujian.show', $ruangUjian->id)
+                ->with(
+                    'error',
+                    config('app.debug')
+                        ? 'Error: ' . $e->getMessage()
+                        : 'Terjadi kesalahan saat menyimpan penilaian. Periksa log aplikasi.'
+                );
+        }
     }
 
     /**
@@ -226,28 +374,44 @@ class RuangUjianController extends Controller
     public function destroy($id)
     {
         $ruangUjian = RuangUjian::where('guru_id', Auth::id())
+            ->with([
+                'hasilUjian.jawaban',
+                'soal',
+            ])
             ->findOrFail($id);
 
-        // Ruang ujian tidak boleh dihapus jika sudah digunakan tahapan
-        if ($ruangUjian->tahapans()->exists()) {
+        try {
+            DB::transaction(function () use ($ruangUjian) {
+
+                // Hapus seluruh jawaban siswa dari setiap hasil ujian.
+                foreach ($ruangUjian->hasilUjian as $hasil) {
+                    $hasil->jawaban()->delete();
+                }
+
+                // Hapus seluruh hasil pengerjaan siswa.
+                $ruangUjian->hasilUjian()->delete();
+
+                // Hapus seluruh soal ujian.
+                $ruangUjian->soal()->delete();
+
+                // Hapus ruang ujian.
+                $ruangUjian->delete();
+            });
+
+            return redirect()
+                ->route('guru.ruang-ujian.index')
+                ->with('success', 'Ruang ujian beserta seluruh data terkait berhasil dihapus.');
+
+        } catch (\Throwable $e) {
+
+            report($e);
+
             return back()->with(
                 'error',
-                'Ruang ujian tidak dapat dihapus karena sudah digunakan pada tahapan pembelajaran.'
+                config('app.debug')
+                    ? 'Gagal menghapus ruang ujian: ' . $e->getMessage()
+                    : 'Terjadi kesalahan saat menghapus ruang ujian.'
             );
         }
-
-        // Ruang ujian tidak boleh dihapus jika sudah memiliki hasil pengerjaan
-        if ($ruangUjian->hasilUjian()->exists()) {
-            return back()->with(
-                'error',
-                'Ruang ujian tidak dapat dihapus karena sudah memiliki riwayat pengerjaan siswa.'
-            );
-        }
-
-        $ruangUjian->delete();
-
-        return redirect()
-            ->route('guru.ruang-ujian.index')
-            ->with('success', 'Ruang ujian berhasil dihapus.');
     }
 }

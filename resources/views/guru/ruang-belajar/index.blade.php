@@ -222,7 +222,7 @@
                     <!-- Sub Aksi: Lihat Siswa Join, Edit, & Hapus -->
                     <div class="flex items-center gap-2">
                         <!-- Tombol Mata: Lihat Siswa Join -->
-                        <a href="#" class="flex-1 py-2 px-3 bg-gray-50 dark:bg-cyberdark-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 rounded-xl text-xs font-bold transition-all duration-200 flex items-center justify-center gap-1.5 border border-gray-100 dark:border-pink-950/20" title="Lihat Siswa Join">
+                        <a href="{{ route('guru.ruang-belajar.monitoring', $ruangBelajar->id) }}" class="flex-1 py-2 px-3 bg-gray-50 dark:bg-cyberdark-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 rounded-xl text-xs font-bold transition-all duration-200 flex items-center justify-center gap-1.5 border border-gray-100 dark:border-pink-950/20" title="Lihat Siswa Join">
                             <i class="fa-solid fa-eye text-xs"></i>
                             <span class="text-[11px]">Siswa</span>
                         </a>

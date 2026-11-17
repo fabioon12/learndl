@@ -176,38 +176,87 @@ class UjianController extends Controller
             ->where('user_id', Auth::id())
             ->findOrFail($hasil_id);
 
-        // Jika ujian sudah selesai, arahkan ke halaman hasil
+        // Ujian yang sudah selesai tidak dapat dikerjakan kembali.
         if ($hasilUjian->status === 'selesai') {
-            return redirect()->route('siswa.ujian.hasil', $hasilUjian->id);
+            return redirect()->route(
+                'siswa.ujian.hasil',
+                $hasilUjian->id
+            );
         }
 
         $ruangUjian = $hasilUjian->ruangUjian;
 
-        // Periksa batas waktu ujian
+        // Pastikan waktu mulai sudah tercatat.
+        if (!$hasilUjian->started_at) {
+            abort(409, 'Waktu mulai ujian belum tercatat.');
+        }
+
+        // Hitung batas waktu ujian.
         $batasWaktu = $hasilUjian->started_at
             ->copy()
-            ->addMinutes($ruangUjian->durasi_menit);
+            ->addMinutes((int) $ruangUjian->durasi_menit);
 
+        // Jika waktu habis, langsung selesaikan ujian.
         if (now()->greaterThanOrEqualTo($batasWaktu)) {
             return $this->selesaikanUjian($hasilUjian);
         }
 
-        // Ambil soal tanpa membocorkan jawaban benar dan pembahasan
-        $soalUjians = $ruangUjian->soal()
-            ->orderBy('urutan')
-            ->get()
-            ->makeHidden(['jawaban_benar', 'pembahasan']);
+        /*
+        |--------------------------------------------------------------------------
+        | Ambil Soal
+        |--------------------------------------------------------------------------
+        | Hanya ambil kolom yang dibutuhkan siswa.
+        | Kunci jawaban, pembahasan, dan rubrik penilaian tidak dikirim
+        | ke halaman pengerjaan ujian.
+        */
 
-        // Ambil jawaban siswa yang sudah tersimpan
-        $jawabanSaya = $hasilUjian->jawaban
-            ->keyBy('soal_ujian_id');
+        $soalUjians = $ruangUjian->soal()
+            ->select([
+                'id',
+                'ruang_ujian_id',
+                'urutan',
+                'pertanyaan',
+                'tipe',
+                'opsi',
+                'exp',
+            ])
+            ->orderBy('urutan')
+            ->get();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Ambil Jawaban Siswa
+        |--------------------------------------------------------------------------
+        | Format:
+        | [
+        |     soal_id => jawaban_siswa
+        | ]
+        */
+
+        $daftarIdSoal = $soalUjians->pluck('id');
+
+        $jawabanAwal = $hasilUjian->jawaban
+            ->whereIn('soal_ujian_id', $daftarIdSoal)
+            ->mapWithKeys(function ($item) {
+                return [
+                    $item->soal_ujian_id => $item->jawaban_siswa
+                ];
+            })
+            ->all();
+
+        // Data untuk timer.
+        $sisaDetik = max(
+            0,
+            now()->diffInSeconds($batasWaktu, false)
+        );
 
         return view('siswa.ujian.kerjakan', compact(
             'hasilUjian',
             'ruangUjian',
             'soalUjians',
-            'jawabanSaya',
-            'batasWaktu'
+            'jawabanAwal',
+            'batasWaktu',
+            'sisaDetik'
         ));
     }
 
@@ -261,7 +310,7 @@ class UjianController extends Controller
     {
         $validated = $request->validate([
             'jawaban' => ['nullable', 'array'],
-            'jawaban.*' => ['nullable', 'string'],
+            'jawaban.*' => ['nullable', 'string', 'max:20000'],
         ]);
 
         $hasilUjian = HasilUjian::where('user_id', Auth::id())
@@ -269,11 +318,12 @@ class UjianController extends Controller
 
         if ($hasilUjian->status === 'selesai') {
             return redirect()
-                ->route('siswa.ujian.hasil', ['hasil_id' => $hasilUjian->id])
+                ->route('siswa.ujian.hasil', [
+                    'hasil_id' => $hasilUjian->id,
+                ])
                 ->with('info', 'Ujian sudah pernah diselesaikan.');
         }
 
-        // Jawaban dari form tetap diproses, termasuk ketika waktu sudah habis.
         return $this->prosesPenilaian(
             $hasilUjian,
             $validated['jawaban'] ?? []
@@ -308,14 +358,12 @@ class UjianController extends Controller
             $jawabanRequest
         ) {
 
-            // Ambil dan kunci hasil ujian
+            // Kunci hasil ujian untuk mencegah proses pengumpulan ganda.
             $hasilUjian = HasilUjian::where('user_id', Auth::id())
                 ->lockForUpdate()
                 ->findOrFail($hasilUjian->id);
 
-            // Jika sudah selesai, pastikan progres tahapan tersinkron
             if ($hasilUjian->status === 'selesai') {
-                $this->sinkronkanProgresTahapan($hasilUjian);
 
                 return redirect()
                     ->route('siswa.ujian.hasil', [
@@ -324,46 +372,76 @@ class UjianController extends Controller
                     ->with('info', 'Ujian sudah pernah diselesaikan.');
             }
 
-            // Ambil soal dari Ruang Ujian
+            // Ambil seluruh soal ujian.
             $ruangUjian = RuangUjian::with('soal')
                 ->findOrFail($hasilUjian->ruang_ujian_id);
 
-            $soalUjians = $ruangUjian->soal;
+            $soalUjians = $ruangUjian->soal
+                ->sortBy('urutan')
+                ->values();
+
+            $daftarIdSoal = $soalUjians->pluck('id')->all();
+
+            // Abaikan ID soal yang bukan bagian dari ujian ini.
+            $jawabanRequest = array_intersect_key(
+                $jawabanRequest,
+                array_flip($daftarIdSoal)
+            );
 
             $jumlahBenar = 0;
             $jumlahSalah = 0;
             $totalExp = 0;
 
+            $jumlahEsai = 0;
+            $jumlahPilihanGanda = 0;
+
             // ==========================================
-            // PENILAIAN JAWABAN
+            // PROSES PENILAIAN SETIAP SOAL
             // ==========================================
 
             foreach ($soalUjians as $soal) {
 
                 $jawabanSiswa = $jawabanRequest[$soal->id] ?? null;
 
+                // Normalisasi jawaban kosong.
+                if (
+                    $jawabanSiswa !== null &&
+                    trim((string) $jawabanSiswa) === ''
+                ) {
+                    $jawabanSiswa = null;
+                }
+
                 $benar = false;
                 $expDiperoleh = 0;
 
-                // Pilihan ganda
                 if ($soal->tipe === 'pilihan_ganda') {
 
+                    $jumlahPilihanGanda++;
+
                     $benar = $jawabanSiswa !== null
-                        && trim((string) $jawabanSiswa) !== ''
                         && strtoupper(trim((string) $jawabanSiswa))
                             === strtoupper(trim((string) $soal->jawaban_benar));
 
                     if ($benar) {
                         $jumlahBenar++;
+
                         $expDiperoleh = (int) $soal->exp;
                     } else {
                         $jumlahSalah++;
                     }
+
+                } elseif ($soal->tipe === 'esai') {
+
+                    $jumlahEsai++;
+
+                    // Esai tidak dinilai otomatis.
+                    // Nilai esai akan diberikan oleh guru.
+                    $benar = false;
+                    $expDiperoleh = 0;
+
                 }
 
-                // Esai disimpan untuk penilaian guru.
-                // Belum mendapatkan EXP otomatis.
-
+                // Simpan jawaban siswa.
                 JawabanUjian::updateOrCreate(
                     [
                         'hasil_ujian_id' => $hasilUjian->id,
@@ -380,16 +458,11 @@ class UjianController extends Controller
             }
 
             // ==========================================
-            // PERHITUNGAN NILAI
+            // NILAI SEMENTARA PILIHAN GANDA
             // ==========================================
 
-            // Esai belum dihitung sampai diperiksa guru
-            $totalPilihanGanda = $soalUjians
-                ->where('tipe', 'pilihan_ganda')
-                ->count();
-
-            $nilai = $totalPilihanGanda > 0
-                ? ($jumlahBenar / $totalPilihanGanda) * 100
+            $nilaiSementara = $jumlahPilihanGanda > 0
+                ? ($jumlahBenar / $jumlahPilihanGanda) * 100
                 : 0;
 
             // ==========================================
@@ -400,26 +473,34 @@ class UjianController extends Controller
                 'total_soal' => $soalUjians->count(),
                 'jumlah_benar' => $jumlahBenar,
                 'jumlah_salah' => $jumlahSalah,
-                'nilai' => round($nilai, 2),
+                'nilai' => round($nilaiSementara, 2),
                 'exp_diperoleh' => $totalExp,
                 'status' => 'selesai',
                 'finished_at' => now(),
             ]);
 
-            // Refresh agar nilai hasil terbaru digunakan
             $hasilUjian->refresh();
 
             // ==========================================
             // SINKRONISASI PROGRES TAHAPAN
             // ==========================================
 
-            $this->sinkronkanProgresTahapan($hasilUjian);
+            // Jika tidak ada esai, nilai sudah final.
+            // Jika ada esai, tunggu sampai guru selesai mengoreksi.
+            if ($jumlahEsai === 0) {
+                $this->sinkronkanProgresTahapan($hasilUjian);
+            }
 
             return redirect()
                 ->route('siswa.ujian.hasil', [
                     'hasil_id' => $hasilUjian->id,
                 ])
-                ->with('success', 'Ujian berhasil dikumpulkan!');
+                ->with(
+                    'success',
+                    $jumlahEsai > 0
+                        ? 'Ujian berhasil dikumpulkan. Jawaban esai menunggu penilaian guru.'
+                        : 'Ujian berhasil dikumpulkan dan dinilai.'
+                );
         });
     }
     public function hasil($hasil_id)
@@ -437,7 +518,125 @@ class UjianController extends Controller
                 ->with('warning', 'Ujian belum selesai.');
         }
 
-        return view('siswa.ujian.hasil', compact('hasilUjian'));
+        $jawaban = $hasilUjian->jawaban;
+
+        // Pisahkan jawaban berdasarkan tipe soal.
+        $jawabanPilihanGanda = $jawaban->filter(function ($item) {
+            return $item->soal?->tipe === 'pilihan_ganda';
+        });
+
+        $jawabanEsai = $jawaban->filter(function ($item) {
+            return $item->soal?->tipe === 'esai';
+        });
+
+        $jumlahEsai = $jawabanEsai->count();
+
+        // Esai dianggap sudah dinilai jika skor_esai tidak null.
+        $esaiBelumDinilai = $jawabanEsai->filter(function ($item) {
+            return $item->skor_esai === null;
+        });
+
+        $jumlahEsaiBelumDinilai = $esaiBelumDinilai->count();
+
+        $semuaEsaiDinilai = $jumlahEsaiBelumDinilai === 0;
+
+        // ==========================================
+        // HITUNG NILAI PILIHAN GANDA
+        // ==========================================
+
+        $totalMaksimalPG = $jawabanPilihanGanda->sum(function ($item) {
+            return (float) ($item->soal?->skor_maksimal ?? 100);
+        });
+
+        $totalSkorPG = $jawabanPilihanGanda->sum(function ($item) {
+            if (!$item->benar) {
+                return 0;
+            }
+
+            return (float) ($item->soal?->skor_maksimal ?? 100);
+        });
+
+        $nilaiPilihanGanda = $totalMaksimalPG > 0
+            ? ($totalSkorPG / $totalMaksimalPG) * 100
+            : 0;
+
+        // ==========================================
+        // HITUNG NILAI ESAI
+        // ==========================================
+
+        $totalMaksimalEsai = $jawabanEsai->sum(function ($item) {
+            return (float) ($item->soal?->skor_maksimal ?? 100);
+        });
+
+        $totalSkorEsai = $jawabanEsai->sum(function ($item) {
+            return $item->skor_esai !== null
+                ? (float) $item->skor_esai
+                : 0;
+        });
+
+        // ==========================================
+        // NILAI AKHIR / SEMENTARA
+        // ==========================================
+
+        if ($semuaEsaiDinilai) {
+
+            $totalMaksimal = $totalMaksimalPG + $totalMaksimalEsai;
+
+            $totalSkor = $totalSkorPG + $totalSkorEsai;
+
+            $nilaiTampil = $totalMaksimal > 0
+                ? ($totalSkor / $totalMaksimal) * 100
+                : 0;
+
+        } else {
+
+            // Selama esai belum selesai dikoreksi,
+            // jangan memasukkan esai ke nilai akhir.
+            $nilaiTampil = $nilaiPilihanGanda;
+        }
+
+        $nilaiTampil = round($nilaiTampil, 2);
+
+        // ==========================================
+        // DURASI
+        // ==========================================
+
+        $durasi = $hasilUjian->started_at && $hasilUjian->finished_at
+            ? max(
+                0,
+                $hasilUjian->started_at->diffInMinutes(
+                    $hasilUjian->finished_at
+                )
+            )
+            : 0;
+
+        // ==========================================
+        // DATA HASIL
+        // ==========================================
+
+        $jumlahBenar = (int) $hasilUjian->jumlah_benar;
+        $jumlahSalah = (int) $hasilUjian->jumlah_salah;
+        $totalSoal = (int) $hasilUjian->total_soal;
+        $totalExp = (int) $hasilUjian->exp_diperoleh;
+
+        return view('siswa.ujian.hasil', compact(
+            'hasilUjian',
+            'jawaban',
+            'jawabanPilihanGanda',
+            'jawabanEsai',
+            'jumlahEsai',
+            'jumlahEsaiBelumDinilai',
+            'semuaEsaiDinilai',
+            'nilaiTampil',
+            'nilaiPilihanGanda',
+            'totalSkorEsai',
+            'totalMaksimalEsai',
+            'jumlahBenar',
+            'jumlahSalah',
+            'totalSoal',
+            'totalExp',
+            'durasi'
+        ));
     }
     public function mulaiDariTahapan($ruang_ujian_id, $tahapan_id)
     {

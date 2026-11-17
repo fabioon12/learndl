@@ -28,6 +28,7 @@ use App\Http\Controllers\Guru\ProfilController as GuruProfilController;
 use App\Http\Controllers\Guru\TahapanRuangBelajarController as GuruTahapanRuangBelajarController;
 use App\Http\Controllers\Guru\AktivitasTahapanController as GuruAktivitasTahapanController;
 use App\Http\Controllers\Guru\TahapanKontenController as GuruTahapanKontenController;
+use App\Http\Controllers\Guru\RuangBelajarMonitoringController as GuruRuangBelajarMonitoringController;
 
 /* controller materi guru */
 use App\Http\Controllers\Guru\MateriController as GuruMateriController;
@@ -121,8 +122,6 @@ Route::middleware('auth')->group(function () {
             // Route Dashboard Saya
             Route::get('/dashboard', [SiswaMateriController::class, 'index'])->name('index');
 
-            /* Route Tahapan Ruang Materi */
-            Route::get('/tahapan/{id}', [SiswaTahapanController::class, 'index'])->name('tahapan');
             
             // Route Eksplorasi Ruang Materi
             Route::get('/eksplorasi', [SiswaMateriController::class, 'eksplorasi'])->name('eksplorasi');
@@ -131,10 +130,41 @@ Route::middleware('auth')->group(function () {
             // POST Action: Siswa mengambil / bergabung ke Ruang Materi
             Route::post('/{id}/enroll', [SiswaMateriController::class, 'ambilMateri'])->name('ambil');
 
-            /* Ruang Belajar */
-            Route::get('/dashboard-belajar', [SiswaDashboardBelajarController::class, 'index'])->name('dashboard-belajar');
-            Route::get('/dashboard-belajar/{materi}/submateri/{submateri}',[SiswaDashboardBelajarController::class, 'showSubmateri'])->name('dashboard-belajar.submateri.show');
-            Route::post('/dashboard-belajar/{materi}/submateri/{submateri}/complete', [SiswaDashboardBelajarController::class, 'completeSubmateri'])->name('dashboard-belajar.submateri.complete');
+              /*
+            |--------------------------------------------------------------------------
+            | PEMBELAJARAN MANDIRI
+            |--------------------------------------------------------------------------
+            */
+
+            Route::get('/dashboard-belajar/{materi}',
+                [SiswaDashboardBelajarController::class, 'index']
+            )->name('dashboard-belajar');
+
+            Route::get('/dashboard-belajar/{materi}/submateri/{submateri}',
+                [SiswaDashboardBelajarController::class, 'showSubmateri']
+            )->name('dashboard-belajar.submateri.show');
+
+            Route::post('/dashboard-belajar/{materi}/submateri/{submateri}/complete',
+                [SiswaDashboardBelajarController::class, 'completeSubmateri']
+            )->name('dashboard-belajar.submateri.complete');
+
+            /*
+            |--------------------------------------------------------------------------
+            | PEMBELAJARAN MELALUI RUANG BELAJAR
+            |--------------------------------------------------------------------------
+            */
+
+            Route::get('/ruang-belajar/{ruangBelajar}/tahapan/{tahapan}/dashboard',
+                [SiswaDashboardBelajarController::class, 'indexRuangBelajar']
+            )->name('ruang-belajar.dashboard');
+
+            Route::get('/ruang-belajar/{ruangBelajar}/tahapan/{tahapan}/materi/{materi}/submateri/{submateri}',
+                [SiswaDashboardBelajarController::class, 'showSubmateriRuangBelajar']
+            )->name('ruang-belajar.submateri.show');
+
+            Route::post('/ruang-belajar/{ruangBelajar}/tahapan/{tahapan}/materi/{materi}/submateri/{submateri}/complete',
+                [SiswaDashboardBelajarController::class, 'completeSubmateriRuangBelajar']
+            )->name('ruang-belajar.submateri.complete');
         });
 
         Route::prefix('ujian')->name('ujian.')->group(function () {
@@ -173,6 +203,9 @@ Route::middleware('auth')->group(function () {
 
             Route::get('/eksplorasi', [GuruRuangBelajarController::class, 'eksplorasi'])->name('eksplorasi');
 
+            Route::get('/{ruang_belajar}/monitoring',[GuruRuangBelajarMonitoringController::class, 'index'])->name('monitoring');
+            Route::get('/{ruang_belajar}/tahapan/{tahapan}/monitoring',[GuruRuangBelajarMonitoringController::class, 'showTahapan'])->name('tahapan.monitoring');
+
             /* Tahapan Ruang Belajar */
             Route::get('/{id}/tahapan', [GuruTahapanRuangBelajarController::class, 'index'])->name('tahapan.index');
             Route::get('/{ruang_belajar_id}/tahapan/create', [GuruTahapanRuangBelajarController::class, 'create'])->name('tahapan.create');
@@ -192,8 +225,6 @@ Route::middleware('auth')->group(function () {
             /* Aktivitas Ruang Belajar */
             Route::get('/{ruang_belajar_id}/tahapan/{tahapan_id}/Aktivitastahapan', [GuruAktivitasTahapanController::class, 'index'])
                 ->name('aktivitas.index');
-
-
         });
 
         /* Materi */
@@ -237,6 +268,8 @@ Route::middleware('auth')->group(function () {
             Route::get('/{ruang_ujian_id}/soal/{soal_id}/edit', [GuruSoalUjianController::class,'edit'])->name('soal.edit');
             Route::put('/{ruang_ujian_id}/soal/{soal_id}/update', [GuruSoalUjianController::class,'update'])->name('soal.update');
             Route::delete('/{ruang_ujian_id}/soal/{soal_id}/delete', [GuruSoalUjianController::class,'destroy'])->name('soal.destroy');
+
+            Route::post('{ruangUjian}/penilaian/{hasilUjian}',[GuruRuangUjianController::class, 'simpanPenilaian'])->name('penilaian.simpan');
             });
          /* Profil Guru */
         Route::get('/profil', [GuruProfilController::class, 'index'])->name('profil');

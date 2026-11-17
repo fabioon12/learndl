@@ -19,14 +19,19 @@ class SoalUjian extends Model
         'tipe',
         'opsi',
         'jawaban_benar',
+        'jawaban_acuan',
+        'rubrik_penilaian',
+        'skor_maksimal',
         'exp',
         'pembahasan',
     ];
 
     protected $casts = [
         'opsi' => 'array',
+        'rubrik_penilaian' => 'array',
         'urutan' => 'integer',
         'exp' => 'integer',
+        'skor_maksimal' => 'integer',
     ];
 
     public function ruangUjian()

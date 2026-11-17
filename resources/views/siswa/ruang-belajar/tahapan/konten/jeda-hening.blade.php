@@ -64,6 +64,171 @@
 
     .timer-number {
         font-variant-numeric: tabular-nums;
+        letter-spacing: -.055em;
+    }
+
+    /* ===== Penyegaran visual: tenang, bersih, dan konsisten ===== */
+    #app, main { scroll-behavior: smooth; }
+
+    .max-w-5xl.mx-auto.space-y-6 {
+        max-width: 68rem;
+        padding-top: .75rem;
+        padding-bottom: 2.5rem;
+        gap: 1.5rem;
+    }
+
+    .max-w-5xl.mx-auto.space-y-6 > .flex:first-child {
+        padding: .25rem .15rem .5rem;
+    }
+
+    .max-w-5xl.mx-auto.space-y-6 > .flex:first-child h1 {
+        letter-spacing: -.04em;
+        font-size: clamp(1.5rem, 3vw, 2rem);
+    }
+
+    .max-w-5xl.mx-auto.space-y-6 > .bg-white,
+    #checkin-section,
+    .max-w-5xl.mx-auto.space-y-6 > .relative {
+        box-shadow: 0 12px 34px rgba(15, 23, 42, .045);
+    }
+
+    .max-w-5xl.mx-auto.space-y-6 > .bg-white {
+        border-color: rgba(148, 163, 184, .17);
+        border-radius: 1.35rem;
+    }
+
+    .max-w-5xl.mx-auto.space-y-6 > .relative.overflow-hidden {
+        border: 1px solid rgba(16, 185, 129, .16);
+        border-radius: 2rem;
+        padding: clamp(1.5rem, 5vw, 3.75rem);
+        background:
+            radial-gradient(circle at 85% 12%, rgba(110, 231, 183, .22), transparent 28%),
+            linear-gradient(145deg, #f0fdf7 0%, #ffffff 48%, #effcf9 100%);
+        box-shadow: 0 22px 55px rgba(16, 185, 129, .08);
+    }
+
+    .dark .max-w-5xl.mx-auto.space-y-6 > .relative.overflow-hidden {
+        background:
+            radial-gradient(circle at 85% 12%, rgba(16, 185, 129, .12), transparent 30%),
+            linear-gradient(145deg, rgba(6, 78, 59, .28), #111827 52%, rgba(19, 78, 74, .2));
+        border-color: rgba(52, 211, 153, .16);
+    }
+
+    .max-w-5xl.mx-auto.space-y-6 > .relative h2 {
+        letter-spacing: -.045em;
+        font-size: clamp(1.8rem, 4vw, 2.65rem);
+    }
+
+    .max-w-5xl.mx-auto.space-y-6 > .relative p {
+        max-width: 38rem;
+        margin-left: auto;
+        margin-right: auto;
+        line-height: 1.85;
+    }
+
+    .breathing-circle {
+        box-shadow: 0 18px 45px rgba(13, 148, 136, .24);
+        background: linear-gradient(145deg, #6ee7b7, #0d9488);
+    }
+
+    .max-w-5xl.mx-auto.space-y-6 > .relative .rounded-3xl.border {
+        border-radius: 1.5rem;
+        border-color: rgba(16, 185, 129, .14);
+        box-shadow: 0 8px 24px rgba(15, 23, 42, .035);
+    }
+
+    #timer {
+        line-height: 1;
+        padding: .15rem 0;
+    }
+
+    #timer-progress {
+        background: linear-gradient(90deg, #34d399, #0d9488);
+    }
+
+    #checkin-section {
+        border-radius: 1.75rem;
+        padding: clamp(1.25rem, 3vw, 2rem);
+        border-color: rgba(148, 163, 184, .18);
+    }
+
+    #checkin-section .choice-card {
+        min-height: 4.25rem;
+        border-radius: 1rem;
+        background: rgba(248, 250, 252, .72);
+        border-color: rgba(148, 163, 184, .24);
+        padding: 1rem 1.1rem;
+    }
+
+    .dark #checkin-section .choice-card {
+        background: rgba(31, 41, 55, .48);
+    }
+
+    #checkin-section .choice-card:hover {
+        border-color: rgba(16, 185, 129, .55);
+        background: rgba(236, 253, 245, .72);
+    }
+
+    .dark #checkin-section .choice-card:hover {
+        background: rgba(16, 185, 129, .09);
+    }
+
+    #checkin-section .choice-card:has(input:checked) {
+        border-color: #10b981;
+        background: #ecfdf5;
+        box-shadow: 0 0 0 3px rgba(16, 185, 129, .10);
+    }
+
+    .dark #checkin-section .choice-card:has(input:checked) {
+        background: rgba(16, 185, 129, .14);
+    }
+
+    #btn-selesai {
+        min-height: 3.4rem;
+        border-radius: 1rem;
+        padding-left: 1.6rem;
+        padding-right: 1.6rem;
+        letter-spacing: .045em;
+    }
+
+    #btn-selesai:disabled {
+        opacity: .72;
+        box-shadow: none;
+    }
+
+    @media (max-width: 640px) {
+        .max-w-5xl.mx-auto.space-y-6 {
+            padding-top: .25rem;
+            gap: 1rem;
+        }
+
+        .max-w-5xl.mx-auto.space-y-6 > .relative.overflow-hidden {
+            border-radius: 1.5rem;
+            padding: 1.5rem 1.1rem;
+        }
+
+        .max-w-5xl.mx-auto.space-y-6 > .relative .w-52.h-52 {
+            width: 11rem;
+            height: 11rem;
+        }
+
+        .max-w-5xl.mx-auto.space-y-6 > .relative .w-36.h-36 {
+            width: 8rem;
+            height: 8rem;
+        }
+
+        #timer {
+            font-size: 3.25rem;
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .breathing-circle,
+        .choice-card,
+        #timer-progress {
+            animation: none !important;
+            transition: none !important;
+        }
     }
 </style>
 @endpush

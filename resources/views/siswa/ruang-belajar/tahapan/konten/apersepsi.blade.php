@@ -21,8 +21,8 @@
 
     $normalisasiUrlTrix = function ($html) {
         return preg_replace_callback(
-            '~https?://(?:localhost|127\.0\.0\.1)(?::\d+)?/storage/([A-Za-z0-9/_\-.%]+)~i',
-            fn ($match) => asset('storage/' . $match[1]),
+            '~https?://learndl\.fun/storage/([A-Za-z0-9/_\-.%]+)~i',
+            fn ($match) => asset('public/storage/' . $match[1]),
             (string) $html
         );
     };
@@ -215,7 +215,18 @@
         max-width:100%;
         height:auto;
         border-radius:1rem;
-        margin:1rem 0;
+        margin:1rem auto;
+    }
+
+    .ap-material figure,
+    .ap-material .attachment {
+        text-align:center;
+    }
+
+    .ap-material figure img,
+    .ap-material .attachment img {
+        margin-left:auto;
+        margin-right:auto;
     }
 
     .ap-material figure a {
@@ -460,8 +471,9 @@
     }
 
     .ap-trix-content figure {
-        margin:1rem 0;
+        margin:1rem auto;
         max-width:100%;
+        text-align:center;
     }
 
     .ap-trix-content img {
@@ -469,12 +481,17 @@
         max-width:100%;
         height:auto;
         border-radius:.85rem;
-        margin:.75rem 0;
+        margin:.75rem auto;
     }
 
     .ap-trix-content .attachment {
         max-width:100%;
-        margin:1rem 0;
+        margin:1rem auto;
+        text-align:center;
+    }
+
+    .ap-trix-content .attachment__caption {
+        text-align:center;
     }
 
     .ap-trix-content .attachment__caption {
@@ -542,6 +559,336 @@
 
     }
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | GAME QUEST UI - APERSEPSI
+    |--------------------------------------------------------------------------
+    | Lapisan visual baru. Alur Blade, form, route, dan JavaScript tetap dipakai.
+    */
+
+    #apersepsiWizard {
+        --game-bg: #0b1020;
+        --game-panel: #121a2e;
+        --game-panel-soft: #17233b;
+        --game-line: rgba(148, 163, 184, .18);
+        --game-cyan: #38e8ff;
+        --game-violet: #9b8cff;
+        --game-gold: #ffd166;
+        position: relative;
+        isolation: isolate;
+        padding: .35rem;
+    }
+
+    #apersepsiWizard::before,
+    #apersepsiWizard::after {
+        content: "";
+        position: absolute;
+        z-index: -1;
+        pointer-events: none;
+        border-radius: 999px;
+        filter: blur(55px);
+        opacity: .20;
+    }
+
+    #apersepsiWizard::before {
+        width: 260px;
+        height: 260px;
+        top: 100px;
+        left: -100px;
+        background: #5b5cf6;
+    }
+
+    #apersepsiWizard::after {
+        width: 240px;
+        height: 240px;
+        right: -80px;
+        top: 520px;
+        background: #06b6d4;
+    }
+
+    #apersepsiWizard > .flex:first-child {
+        padding: .75rem .35rem;
+    }
+
+    #apersepsiWizard > .flex:first-child > div:first-child > div:first-child {
+        width: 3.4rem;
+        height: 3.4rem;
+        border-radius: 1.15rem;
+        color: #061323;
+        background: linear-gradient(145deg, #67f5ff, #9d8cff);
+        box-shadow: 0 0 26px rgba(56, 232, 255, .28);
+    }
+
+    #apersepsiWizard > .flex:first-child h1 {
+        color: #f8fafc;
+        letter-spacing: -.04em;
+        text-shadow: 0 2px 18px rgba(56, 232, 255, .12);
+    }
+
+    #apersepsiWizard > .flex:first-child > span {
+        border: 1px solid rgba(56, 232, 255, .28);
+        background: rgba(15, 30, 52, .82);
+        color: #8ff4ff;
+        letter-spacing: .10em;
+        box-shadow: inset 0 0 18px rgba(56, 232, 255, .06);
+    }
+
+    #apersepsiWizard .ap-material img,
+    #apersepsiWizard .ap-trix-content img {
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    #apersepsiWizard .ap-material figure,
+    #apersepsiWizard .ap-trix-content figure,
+    #apersepsiWizard .ap-material .attachment,
+    #apersepsiWizard .ap-trix-content .attachment {
+        margin-left: auto;
+        margin-right: auto;
+        text-align: center;
+    }
+
+    #apersepsiWizard .ap-panel {
+        position: relative;
+        color: #e5edf9;
+        background:
+            linear-gradient(145deg, rgba(24, 35, 59, .98), rgba(13, 20, 37, .98));
+        border: 1px solid var(--game-line);
+        border-radius: 1.45rem;
+        box-shadow:
+            0 18px 45px rgba(2, 6, 23, .22),
+            inset 0 1px 0 rgba(255, 255, 255, .045);
+    }
+
+    #apersepsiWizard .ap-panel > .border-b {
+        border-color: rgba(148, 163, 184, .15);
+        background: linear-gradient(90deg, rgba(56, 232, 255, .055), transparent 75%);
+    }
+
+    #apersepsiWizard .ap-panel h3,
+    #apersepsiWizard .ap-panel h4,
+    #apersepsiWizard .ap-panel .text-gray-900,
+    #apersepsiWizard .ap-panel .text-gray-800 {
+        color: #f3f7ff;
+    }
+
+    #apersepsiWizard .ap-panel .text-gray-700 {
+        color: #cbd5e1;
+    }
+
+    #apersepsiWizard .ap-panel .text-gray-500,
+    #apersepsiWizard .ap-panel .text-gray-400 {
+        color: #9aaac2;
+    }
+
+    #apersepsiWizard .ap-gradient {
+        min-height: 220px;
+        display: flex;
+        align-items: center;
+        border: 1px solid rgba(56, 232, 255, .28);
+        background:
+            radial-gradient(circle at 88% 18%, rgba(56, 232, 255, .25), transparent 26%),
+            radial-gradient(circle at 12% 100%, rgba(167, 139, 250, .22), transparent 35%),
+            linear-gradient(120deg, #111b36 0%, #25205a 55%, #172c4c 100%);
+        box-shadow: 0 20px 50px rgba(30, 41, 100, .25);
+    }
+
+    #apersepsiWizard .ap-gradient::after {
+        content: "✦";
+        position: absolute;
+        right: 8%;
+        bottom: -32px;
+        color: rgba(255, 255, 255, .09);
+        font-size: 190px;
+        line-height: 1;
+        transform: rotate(-12deg);
+        pointer-events: none;
+    }
+
+    #apersepsiWizard .ap-gradient [class*="bg-white/20"] {
+        display: inline-flex;
+        align-items: center;
+        border: 1px solid rgba(255, 255, 255, .22);
+        background: rgba(7, 17, 38, .35);
+        color: #a5f3fc;
+        letter-spacing: .12em;
+    }
+
+    #apersepsiWizard .ap-gradient h2 {
+        max-width: 760px;
+        color: #fff;
+        letter-spacing: -.035em;
+        text-shadow: 0 3px 22px rgba(0, 0, 0, .25);
+    }
+
+    #apersepsiWizard .ap-gradient p {
+        color: #c7d8f4;
+    }
+
+    #apersepsiWizard .ap-step {
+        position: relative;
+        min-height: 66px;
+        border: 1px solid rgba(148, 163, 184, .13);
+        background: rgba(8, 15, 30, .45);
+        color: #9aaac2;
+        border-radius: 1rem;
+        transition: .2s ease;
+    }
+
+    #apersepsiWizard .ap-step-number {
+        width: 2.25rem;
+        height: 2.25rem;
+        border: 1px solid rgba(148, 163, 184, .18);
+        background: #202d47;
+        color: #c5d4ea;
+        border-radius: .75rem;
+    }
+
+    #apersepsiWizard .ap-step.is-current {
+        color: #e8fbff;
+        border-color: rgba(56, 232, 255, .55);
+        background: linear-gradient(120deg, rgba(8, 145, 178, .20), rgba(99, 102, 241, .16));
+        box-shadow: 0 0 22px rgba(56, 232, 255, .09), inset 0 0 18px rgba(56, 232, 255, .04);
+    }
+
+    #apersepsiWizard .ap-step.is-current .ap-step-number {
+        color: #061323;
+        border-color: transparent;
+        background: linear-gradient(145deg, #67f5ff, #a78bfa);
+        box-shadow: 0 0 16px rgba(56, 232, 255, .25);
+    }
+
+    #apersepsiWizard .ap-step.is-done {
+        color: #9df3d0;
+        border-color: rgba(52, 211, 153, .25);
+        background: rgba(16, 185, 129, .08);
+    }
+
+    #apersepsiWizard .ap-step.is-done .ap-step-number {
+        color: #052e25;
+        background: #6ee7b7;
+        border-color: transparent;
+    }
+
+    #apersepsiWizard #apProgress {
+        background: linear-gradient(90deg, #38e8ff, #8b83ff, #d18cff);
+        box-shadow: 0 0 16px rgba(56, 232, 255, .38);
+    }
+
+    #apersepsiWizard .ap-btn {
+        min-height: 46px;
+        border-radius: .9rem;
+        letter-spacing: .01em;
+        box-shadow: 0 8px 20px rgba(2, 6, 23, .18);
+    }
+
+    #apersepsiWizard .ap-btn-primary {
+        color: #071326;
+        background: linear-gradient(105deg, #67f5ff, #a99aff);
+        border: 1px solid rgba(255, 255, 255, .3);
+        box-shadow: 0 8px 24px rgba(56, 189, 248, .17);
+    }
+
+    #apersepsiWizard .ap-btn-primary:hover {
+        box-shadow: 0 10px 28px rgba(56, 189, 248, .30);
+        filter: brightness(1.08);
+    }
+
+    #apersepsiWizard .ap-btn-secondary {
+        color: #c8d6ed;
+        border: 1px solid rgba(148, 163, 184, .22);
+        background: rgba(30, 41, 59, .82);
+    }
+
+    #apersepsiWizard .ap-btn-secondary:hover {
+        border-color: rgba(56, 232, 255, .4);
+        color: #a5f3fc;
+    }
+
+    #apersepsiWizard [data-ap-screen="2"] .rounded-2xl.bg-indigo-50,
+    #apersepsiWizard [data-ap-screen="3"] .rounded-2xl.bg-indigo-50 {
+        color: #e2eaff;
+        border-color: rgba(129, 140, 248, .25);
+        background: linear-gradient(135deg, rgba(67, 56, 202, .19), rgba(8, 145, 178, .10));
+    }
+
+    #apersepsiWizard [data-ap-screen="2"] .text-indigo-950,
+    #apersepsiWizard [data-ap-screen="3"] .text-indigo-950 {
+        color: #e8f1ff;
+    }
+
+    #apersepsiWizard [data-ap-screen="2"] .text-indigo-600,
+    #apersepsiWizard [data-ap-screen="3"] .text-indigo-600 {
+        color: #8eeeff;
+    }
+
+    #apersepsiWizard .ap-trix-content img,
+    #apersepsiWizard .ap-material img {
+        border: 1px solid rgba(148, 163, 184, .18);
+        box-shadow: 0 12px 28px rgba(0, 0, 0, .18);
+    }
+
+    #apersepsiWizard .ap-editor-wrapper {
+        border: 1px solid rgba(56, 232, 255, .24);
+        border-radius: 1rem;
+        box-shadow: 0 0 0 4px rgba(56, 232, 255, .035);
+    }
+
+    #apersepsiWizard .ap-editor-wrapper trix-toolbar {
+        background: #edf4ff;
+    }
+
+    #apersepsiWizard .ap-trix-editor {
+        color: #172033;
+        background: #fff;
+    }
+
+    #apersepsiWizard .ap-trix-editor img {
+        border: 0;
+        box-shadow: none;
+    }
+
+    #apersepsiWizard [data-ap-screen="3"] article.ap-panel {
+        border-left: 3px solid rgba(56, 232, 255, .55);
+    }
+
+    #apersepsiWizard .dark .ap-panel {
+        background: linear-gradient(145deg, #18233b, #0e172b);
+    }
+
+    #apersepsiWizard [role="alert"],
+    #apersepsiWizard [role="status"] {
+        border-radius: 1rem;
+    }
+
+    @media (max-width: 640px) {
+        #apersepsiWizard {
+            padding: 0;
+        }
+
+        #apersepsiWizard .ap-gradient {
+            min-height: 200px;
+            padding: 1.35rem;
+            border-radius: 1.4rem;
+        }
+
+        #apersepsiWizard .ap-gradient::after {
+            right: -3%;
+            font-size: 130px;
+        }
+
+        #apersepsiWizard .ap-step {
+            min-height: 78px;
+            gap: .4rem;
+            padding: .65rem .25rem;
+        }
+
+        #apersepsiWizard .ap-btn {
+            width: 100%;
+        }
+    }
+
 </style>
 
 @endpush
@@ -573,20 +920,33 @@
 
             <div>
                 <p class="text-[10px] uppercase tracking-[.2em] font-black text-indigo-500">
-                    Aktivitas Pembelajaran
+                    PLAYER QUEST · MODE BELAJAR
                 </p>
 
                 <h1 class="text-2xl font-black text-gray-900 dark:text-white">
-                    Mari Berfikir
+                    Misi: Asah Pikiran
                 </h1>
             </div>
 
         </div>
 
-        <span class="rounded-full px-4 py-2 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-300 text-xs font-bold">
-            <i class="fa-solid fa-brain mr-2"></i>
-            Aktifkan Pengetahuan Awal
-        </span>
+        <div class="flex flex-wrap items-center gap-2">
+            <a
+                href="{{ route('siswa.ruang-belajar.tahapan.show', [
+                    'ruang_belajar_id' => $ruangBelajar->id,
+                    'tahapan_id' => $tahapan->id
+                ]) }}"
+                class="inline-flex items-center gap-2 rounded-xl border border-cyan-300/30 bg-slate-900/80 px-4 py-2.5 text-xs font-extrabold tracking-wide text-cyan-100 shadow-lg shadow-cyan-950/20 transition hover:-translate-y-0.5 hover:border-cyan-200 hover:bg-slate-800 hover:text-white focus:outline-none focus:ring-2 focus:ring-cyan-300"
+            >
+                <i class="fa-solid fa-arrow-left"></i>
+                Kembali ke Ruang Belajar
+            </a>
+
+            <span class="rounded-full px-4 py-2 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-300 text-xs font-bold">
+                <i class="fa-solid fa-brain mr-2"></i>
+                QUEST AKTIF
+            </span>
+        </div>
 
     </div>
 
@@ -657,7 +1017,7 @@
                     <i class="fa-solid fa-book-open"></i>
                 </span>
 
-                <span>01 · Baca Materi</span>
+                <span>01 · JELAJAHI MATERI</span>
 
             </div>
 
@@ -669,7 +1029,7 @@
                         <i class="fa-solid fa-pen-to-square"></i>
                     </span>
 
-                    <span>02 · Jawab Pemantik</span>
+                    <span>02 · SELESAIKAN TANTANGAN</span>
 
                 </div>
 
@@ -679,7 +1039,7 @@
                         <i class="fa-solid fa-comments"></i>
                     </span>
 
-                    <span>03 · Forum Diskusi</span>
+                    <span>03 · GABUNG DISKUSI</span>
 
                 </div>
 
@@ -1109,7 +1469,7 @@
 
                         <div class="w-10 h-10 rounded-xl bg-indigo-600 text-white grid place-items-center font-black">
 
-                            {{ strtoupper(mb_substr(auth()->user()->name ?? 'S', 0, 1)) }}
+                            {{ strtoupper(mb_substr(auth()->user()->fullname ?? 'S', 0, 1)) }}
 
                         </div>
 
@@ -1164,7 +1524,7 @@
 
                     @php
 
-                        $namaTeman = $item->user?->name ?? 'Siswa';
+                        $namaTeman = $item->user?->fullname ?? 'Siswa';
 
                         $isiJawabanTeman = data_get(
                             $item->jawaban,
@@ -1489,7 +1849,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
     }
-
 
     /*
     |--------------------------------------------------------------------------

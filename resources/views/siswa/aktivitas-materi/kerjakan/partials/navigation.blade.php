@@ -18,7 +18,8 @@
 
                         <p class="mt-1 text-xs leading-5 text-gray-300">
                             Kamu sudah menyelesaikan materi ini.
-                            Kamu tetap bisa mengulang setiap tahapan untuk memperdalam pemahamanmu.
+                            Kamu tetap bisa mengulang setiap tahapan
+                            untuk memperdalam pemahamanmu.
                         </p>
                     </div>
                 </div>
@@ -112,13 +113,7 @@
         <form
             id="complete-form"
             method="POST"
-            action="{{ route(
-                'siswa.ruang-materi.dashboard-belajar.submateri.complete',
-                [
-                    'materi' => $materi->id,
-                    'submateri' => $submateri->id
-                ]
-            ) }}"
+            action="{{ $completeUrl }}"
             class="hidden"
         >
             @csrf

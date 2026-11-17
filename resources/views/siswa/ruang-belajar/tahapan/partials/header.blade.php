@@ -77,10 +77,16 @@
             </div>
 
             <!-- Tombol Panduan -->
-            <button type="button" 
-                class="inline-flex items-center justify-center gap-2 text-[11px] font-black uppercase tracking-wider text-white bg-white/15 hover:bg-white/25 px-5 py-3 rounded-full border border-white/30 backdrop-blur-md transition-all active:scale-95 shadow-lg">
-                <i class="fa-solid fa-book-open text-amber-300 text-sm"></i>
-                <span>PANDUAN BELAJAR</span>
+            <button
+                type="button"
+                onclick="openPanduanBelajar()"
+                class="inline-flex items-center gap-2 px-4 py-2.5
+                    rounded-xl bg-white/15 hover:bg-white/25
+                    border border-white/20 text-white
+                    font-semibold text-sm transition-all duration-200"
+            >
+                <i class="fas fa-book-reader"></i>
+                Panduan Belajar
             </button>
         </div>
 

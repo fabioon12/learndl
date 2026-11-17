@@ -55,4 +55,8 @@ class HasilUjian extends Model
     {
         return $this->hasMany(JawabanUjian::class, 'hasil_ujian_id');
     }
+    public function soal()
+    {
+        return $this->belongsTo(SoalUjian::class, 'soal_ujian_id');
+    }
 }

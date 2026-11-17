@@ -13,17 +13,30 @@ class LeaderboardController extends Controller
 {
     public function index(Request $request)
     {
-        // Jumlah siswa per halaman
         $perPage = 10;
 
         /*
         |--------------------------------------------------------------------------
-        | 1. AMBIL SELURUH SISWA DAN HITUNG XP
+        | 1. AMBIL DATA SISWA YANG LOGIN
         |--------------------------------------------------------------------------
         */
 
-        $allStudents = User::query()
+        $loggedInStudent = Auth::user();
+
+        // Ambil sekolah siswa yang sedang login
+        $schoolName = $loggedInStudent->school_name;
+
+        /*
+        |--------------------------------------------------------------------------
+        | 2. AMBIL SISWA BERDASARKAN SEKOLAH
+        |--------------------------------------------------------------------------
+        */
+
+        $studentsQuery = User::query()
             ->where('role', 'siswa')
+            ->where('school_name', $schoolName);
+
+        $allStudents = $studentsQuery
             ->get()
             ->map(function ($student) {
 
@@ -54,12 +67,7 @@ class LeaderboardController extends Controller
                     ->distinct()
                     ->count('submateri_id');
 
-                /*
-                |--------------------------------------------------------------------------
-                | IDENTITAS SISWA
-                |--------------------------------------------------------------------------
-                */
-
+                // IDENTITAS SISWA
                 $student->jurusan =
                     $student->major_or_subject;
 
@@ -74,7 +82,7 @@ class LeaderboardController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | 2. URUTKAN BERDASARKAN XP GLOBAL
+        | 3. URUTKAN BERDASARKAN XP
         |--------------------------------------------------------------------------
         */
 
@@ -88,7 +96,7 @@ class LeaderboardController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | 3. TENTUKAN PERINGKAT GLOBAL
+        | 4. TENTUKAN PERINGKAT SEKOLAH
         |--------------------------------------------------------------------------
         */
 
@@ -100,7 +108,7 @@ class LeaderboardController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | 4. AMBIL TOP 3 CHAMPIONS
+        | 5. AMBIL TOP 3 SISWA
         |--------------------------------------------------------------------------
         */
 
@@ -110,18 +118,18 @@ class LeaderboardController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | 5. AMBIL PERINGKAT SISWA LOGIN
+        | 6. AMBIL PERINGKAT SISWA LOGIN
         |--------------------------------------------------------------------------
         */
 
         $currentStudent = $allStudents->firstWhere(
             'id',
-            Auth::id()
+            $loggedInStudent->id
         );
 
         /*
         |--------------------------------------------------------------------------
-        | 6. PAGINATION
+        | 7. PAGINATION
         |--------------------------------------------------------------------------
         */
 
@@ -130,12 +138,10 @@ class LeaderboardController extends Controller
             (int) LengthAwarePaginator::resolveCurrentPage()
         );
 
-        // Ambil 10 siswa sesuai halaman
         $currentPageStudents = $allStudents
             ->forPage($page, $perPage)
             ->values();
 
-        // Buat pagination Laravel
         $leaderboard = new LengthAwarePaginator(
             $currentPageStudents,
             $allStudents->count(),
@@ -149,14 +155,15 @@ class LeaderboardController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | 7. RETURN VIEW
+        | 8. RETURN VIEW
         |--------------------------------------------------------------------------
         */
 
         return view('siswa.leaderboard.index', compact(
             'leaderboard',
             'topThree',
-            'currentStudent'
+            'currentStudent',
+            'schoolName'
         ));
     }
 }

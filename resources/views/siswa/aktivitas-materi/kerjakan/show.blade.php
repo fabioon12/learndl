@@ -7,6 +7,46 @@
 
 @php
     $totalBlocks = count($blocks ?? []);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Identifikasi Konteks Pembelajaran
+    |--------------------------------------------------------------------------
+    */
+
+    $isFromRuangBelajar = isset($ruangBelajar, $tahapan)
+        && $ruangBelajar
+        && $tahapan;
+
+    /*
+    |--------------------------------------------------------------------------
+    | Tentukan URL Penyelesaian
+    |--------------------------------------------------------------------------
+    */
+
+    if ($isFromRuangBelajar) {
+
+        $completeUrl = route(
+            'siswa.ruang-materi.ruang-belajar.submateri.complete',
+            [
+                'ruangBelajar' => $ruangBelajar->id,
+                'tahapan' => $tahapan->id,
+                'materi' => $materi->id,
+                'submateri' => $submateri->id,
+            ]
+        );
+
+    } else {
+
+        $completeUrl = route(
+            'siswa.ruang-materi.dashboard-belajar.submateri.complete',
+            [
+                'materi' => $materi->id,
+                'submateri' => $submateri->id,
+            ]
+        );
+
+    }
 @endphp
 
 <div
@@ -57,7 +97,11 @@
 
             {{-- NAVIGASI --}}
             @include(
-                'siswa.aktivitas-materi.kerjakan.partials.navigation'
+                'siswa.aktivitas-materi.kerjakan.partials.navigation',
+                [
+                    'completeUrl' => $completeUrl,
+                    'isFromRuangBelajar' => $isFromRuangBelajar,
+                ]
             )
 
         </main>
